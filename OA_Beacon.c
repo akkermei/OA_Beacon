@@ -145,7 +145,7 @@ static void
 	 * Enable extrenal interrupts on the input pins
 	 */
 
-	PCMSK |= _BV(ENABlE_FLASH_PIN);
+	PCMSK |= _BV(PCINT4);
 	/* Enable PIN Change interrupt */
 	GIMSK |= _BV(PCIE); 
 
@@ -214,6 +214,7 @@ intflags.anacomp_int = 1;
                         /* shut down the beacon and set in deepsleep */
                         set_sleep_mode(SLEEP_MODE_PWR_DOWN);
                         mode = MODE_DEEP_SLEEP;
+                        break;
                       }
                         
                         
@@ -329,7 +330,7 @@ intflags.anacomp_int = 1;
                       set_sleep_mode(SLEEP_MODE_IDLE);
                     }
                   }
-                  
+            break;
                   
                   
 			}

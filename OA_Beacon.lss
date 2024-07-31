@@ -3,29 +3,29 @@ OA_Beacon.elf:     file format elf32-avr
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
-  0 .text         00000192  00000000  00000000  00000094  2**1
+  0 .text         000001ce  00000000  00000000  00000094  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  1 .data         00000000  00800060  00000192  00000226  2**0
+  1 .data         00000000  00800060  000001ce  00000262  2**0
                   CONTENTS, ALLOC, LOAD, DATA
-  2 .bss          00000001  00800060  00800060  00000226  2**0
+  2 .bss          00000001  00800060  00800060  00000262  2**0
                   ALLOC
-  3 .stab         000008c4  00000000  00000000  00000228  2**2
+  3 .stab         00000918  00000000  00000000  00000264  2**2
                   CONTENTS, READONLY, DEBUGGING
-  4 .stabstr      00000ebc  00000000  00000000  00000aec  2**0
+  4 .stabstr      00000ece  00000000  00000000  00000b7c  2**0
                   CONTENTS, READONLY, DEBUGGING
-  5 .comment      00000026  00000000  00000000  000019a8  2**0
+  5 .comment      00000026  00000000  00000000  00001a4a  2**0
                   CONTENTS, READONLY
-  6 .note.gnu.avr.deviceinfo 0000003c  00000000  00000000  000019d0  2**2
+  6 .note.gnu.avr.deviceinfo 0000003c  00000000  00000000  00001a70  2**2
                   CONTENTS, READONLY, OCTETS
-  7 .debug_aranges 00000040  00000000  00000000  00001a10  2**3
+  7 .debug_aranges 00000040  00000000  00000000  00001ab0  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
-  8 .debug_info   0000046c  00000000  00000000  00001a50  2**0
+  8 .debug_info   0000046c  00000000  00000000  00001af0  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
-  9 .debug_abbrev 00000410  00000000  00000000  00001ebc  2**0
+  9 .debug_abbrev 00000410  00000000  00000000  00001f5c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 10 .debug_line   000000fd  00000000  00000000  000022cc  2**0
+ 10 .debug_line   000000fd  00000000  00000000  0000236c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 11 .debug_str    000001ec  00000000  00000000  000023c9  2**0
+ 11 .debug_str    000001ec  00000000  00000000  00002469  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -81,7 +81,7 @@ Disassembly of section .text:
 
 0000003a <L0^A>:
   3a:	2a d0       	rcall	.+84     	; 0x90 <main>
-  3c:	a8 c0       	rjmp	.+336    	; 0x18e <_exit>
+  3c:	c6 c0       	rjmp	.+396    	; 0x1ca <_exit>
 
 0000003e <__bad_interrupt>:
   3e:	e0 cf       	rjmp	.-64     	; 0x0 <__vectors>
@@ -233,7 +233,7 @@ Disassembly of section .text:
   ee:	95 e0       	ldi	r25, 0x05	; 5
 
 000000f0 <.LM34>:
-  f0:	80 e0       	ldi	r24, 0x00	; 0
+  f0:	83 e0       	ldi	r24, 0x03	; 3
 
 000000f2 <.LM35>:
   f2:	48 ef       	ldi	r20, 0xF8	; 248
@@ -241,146 +241,191 @@ Disassembly of section .text:
 000000f4 <.LM36>:
   f4:	35 e0       	ldi	r19, 0x05	; 5
 
-000000f6 <.L11>:
-  f6:	81 30       	cpi	r24, 0x01	; 1
-  f8:	31 f1       	breq	.+76     	; 0x146 <.L5>
-  fa:	82 30       	cpi	r24, 0x02	; 2
-  fc:	91 f1       	breq	.+100    	; 0x162 <.L6>
-  fe:	81 11       	cpse	r24, r1
- 100:	1a c0       	rjmp	.+52     	; 0x136 <.L7>
+000000f6 <.L13>:
+  f6:	82 30       	cpi	r24, 0x02	; 2
+  f8:	09 f4       	brne	.+2      	; 0xfc <.Lname43>
 
-00000102 <.LM38>:
- 102:	20 91 60 00 	lds	r18, 0x0060	; 0x800060 <intflags>
+000000fa <L0^A>:
+  fa:	3d c0       	rjmp	.+122    	; 0x176 <.L5>
+  fc:	83 30       	cpi	r24, 0x03	; 3
+  fe:	09 f4       	brne	.+2      	; 0x102 <.Lname44>
 
-00000106 <.LM39>:
- 106:	22 ff       	sbrs	r18, 2
- 108:	16 c0       	rjmp	.+44     	; 0x136 <.L7>
+00000100 <L0^A>:
+ 100:	50 c0       	rjmp	.+160    	; 0x1a2 <.L6>
+ 102:	81 30       	cpi	r24, 0x01	; 1
+ 104:	51 f1       	breq	.+84     	; 0x15a <.L7>
 
-0000010a <.LM40>:
- 10a:	80 91 60 00 	lds	r24, 0x0060	; 0x800060 <intflags>
- 10e:	8b 7f       	andi	r24, 0xFB	; 251
- 110:	80 93 60 00 	sts	0x0060, r24	; 0x800060 <intflags>
+00000106 <.LM38>:
+ 106:	b4 99       	sbic	0x16, 4	; 22
+ 108:	0d c0       	rjmp	.+26     	; 0x124 <.L8>
 
-00000114 <.LM41>:
- 114:	43 98       	cbi	0x08, 3	; 8
+0000010a <.LM39>:
+ 10a:	85 b7       	in	r24, 0x35	; 53
+ 10c:	87 7e       	andi	r24, 0xE7	; 231
+ 10e:	80 61       	ori	r24, 0x10	; 16
+ 110:	85 bf       	out	0x35, r24	; 53
 
-00000116 <.LM42>:
- 116:	80 b5       	in	r24, 0x20	; 32
- 118:	8b 7f       	andi	r24, 0xFB	; 251
- 11a:	80 bd       	out	0x20, r24	; 32
+00000112 <.LM40>:
+ 112:	83 e0       	ldi	r24, 0x03	; 3
 
-0000011c <.LM43>:
- 11c:	89 b7       	in	r24, 0x39	; 57
- 11e:	82 60       	ori	r24, 0x02	; 2
- 120:	89 bf       	out	0x39, r24	; 57
+00000114 <.L9>:
+ 114:	25 b7       	in	r18, 0x35	; 53
+ 116:	20 62       	ori	r18, 0x20	; 32
+ 118:	25 bf       	out	0x35, r18	; 53
+ 11a:	88 95       	sleep
+ 11c:	25 b7       	in	r18, 0x35	; 53
+ 11e:	2f 7d       	andi	r18, 0xDF	; 223
+ 120:	25 bf       	out	0x35, r18	; 53
 
-00000122 <.LM44>:
- 122:	45 9b       	sbis	0x08, 5	; 8
- 124:	06 c0       	rjmp	.+12     	; 0x132 <.L8>
+00000122 <.LM42>:
+ 122:	e9 cf       	rjmp	.-46     	; 0xf6 <.L13>
 
-00000126 <.LM45>:
- 126:	8a b5       	in	r24, 0x2a	; 42
- 128:	8f 77       	andi	r24, 0x7F	; 127
- 12a:	8a bd       	out	0x2a, r24	; 42
+00000124 <.L8>:
+ 124:	80 91 60 00 	lds	r24, 0x0060	; 0x800060 <intflags>
 
-0000012c <.LM46>:
- 12c:	b8 9a       	sbi	0x17, 0	; 23
+00000128 <.LM44>:
+ 128:	82 ff       	sbrs	r24, 2
+ 12a:	2b c0       	rjmp	.+86     	; 0x182 <.L14>
 
-0000012e <.LM47>:
- 12e:	c0 98       	cbi	0x18, 0	; 24
+0000012c <.LM45>:
+ 12c:	80 91 60 00 	lds	r24, 0x0060	; 0x800060 <intflags>
+ 130:	8b 7f       	andi	r24, 0xFB	; 251
+ 132:	80 93 60 00 	sts	0x0060, r24	; 0x800060 <intflags>
 
-00000130 <.LM48>:
- 130:	33 bf       	out	0x33, r19	; 51
+00000136 <.LM46>:
+ 136:	43 98       	cbi	0x08, 3	; 8
 
-00000132 <.L8>:
- 132:	33 bf       	out	0x33, r19	; 51
+00000138 <.LM47>:
+ 138:	80 b5       	in	r24, 0x20	; 32
+ 13a:	8b 7f       	andi	r24, 0xFB	; 251
+ 13c:	80 bd       	out	0x20, r24	; 32
 
-00000134 <.LM50>:
- 134:	81 e0       	ldi	r24, 0x01	; 1
+0000013e <.LM48>:
+ 13e:	89 b7       	in	r24, 0x39	; 57
+ 140:	82 60       	ori	r24, 0x02	; 2
+ 142:	89 bf       	out	0x39, r24	; 57
 
-00000136 <.L7>:
- 136:	25 b7       	in	r18, 0x35	; 53
- 138:	20 62       	ori	r18, 0x20	; 32
- 13a:	25 bf       	out	0x35, r18	; 53
- 13c:	88 95       	sleep
- 13e:	25 b7       	in	r18, 0x35	; 53
- 140:	2f 7d       	andi	r18, 0xDF	; 223
- 142:	25 bf       	out	0x35, r18	; 53
+00000144 <.LM49>:
+ 144:	45 9b       	sbis	0x08, 5	; 8
+ 146:	06 c0       	rjmp	.+12     	; 0x154 <.L10>
 
-00000144 <.LM52>:
- 144:	d8 cf       	rjmp	.-80     	; 0xf6 <.L11>
+00000148 <.LM50>:
+ 148:	8a b5       	in	r24, 0x2a	; 42
+ 14a:	8f 77       	andi	r24, 0x7F	; 127
+ 14c:	8a bd       	out	0x2a, r24	; 42
 
-00000146 <.L5>:
- 146:	20 91 60 00 	lds	r18, 0x0060	; 0x800060 <intflags>
+0000014e <.LM51>:
+ 14e:	b8 9a       	sbi	0x17, 0	; 23
 
-0000014a <.LM54>:
- 14a:	20 ff       	sbrs	r18, 0
- 14c:	f4 cf       	rjmp	.-24     	; 0x136 <.L7>
+00000150 <.LM52>:
+ 150:	c0 98       	cbi	0x18, 0	; 24
 
-0000014e <.LM55>:
- 14e:	20 91 60 00 	lds	r18, 0x0060	; 0x800060 <intflags>
- 152:	2e 7f       	andi	r18, 0xFE	; 254
- 154:	20 93 60 00 	sts	0x0060, r18	; 0x800060 <intflags>
+00000152 <.LM53>:
+ 152:	33 bf       	out	0x33, r19	; 51
 
-00000158 <.LM56>:
- 158:	91 50       	subi	r25, 0x01	; 1
- 15a:	69 f7       	brne	.-38     	; 0x136 <.L7>
+00000154 <.L10>:
+ 154:	33 bf       	out	0x33, r19	; 51
 
-0000015c <.LM57>:
- 15c:	95 e0       	ldi	r25, 0x05	; 5
+00000156 <.LM55>:
+ 156:	81 e0       	ldi	r24, 0x01	; 1
+ 158:	dd cf       	rjmp	.-70     	; 0x114 <.L9>
 
-0000015e <.LM58>:
- 15e:	82 e0       	ldi	r24, 0x02	; 2
- 160:	ea cf       	rjmp	.-44     	; 0x136 <.L7>
+0000015a <.L7>:
+ 15a:	20 91 60 00 	lds	r18, 0x0060	; 0x800060 <intflags>
 
-00000162 <.L6>:
- 162:	45 9b       	sbis	0x08, 5	; 8
- 164:	06 c0       	rjmp	.+12     	; 0x172 <.L9>
+0000015e <.LM57>:
+ 15e:	20 ff       	sbrs	r18, 0
+ 160:	d9 cf       	rjmp	.-78     	; 0x114 <.L9>
 
-00000166 <.LM60>:
- 166:	8a b5       	in	r24, 0x2a	; 42
- 168:	80 68       	ori	r24, 0x80	; 128
- 16a:	8a bd       	out	0x2a, r24	; 42
+00000162 <.LM58>:
+ 162:	20 91 60 00 	lds	r18, 0x0060	; 0x800060 <intflags>
+ 166:	2e 7f       	andi	r18, 0xFE	; 254
+ 168:	20 93 60 00 	sts	0x0060, r18	; 0x800060 <intflags>
 
-0000016c <.L10>:
- 16c:	43 9a       	sbi	0x08, 3	; 8
+0000016c <.LM59>:
+ 16c:	91 50       	subi	r25, 0x01	; 1
+ 16e:	91 f6       	brne	.-92     	; 0x114 <.L9>
 
-0000016e <.LM62>:
- 16e:	80 e0       	ldi	r24, 0x00	; 0
+00000170 <.LM60>:
+ 170:	95 e0       	ldi	r25, 0x05	; 5
 
-00000170 <.LM63>:
- 170:	e2 cf       	rjmp	.-60     	; 0x136 <.L7>
+00000172 <.LM61>:
+ 172:	82 e0       	ldi	r24, 0x02	; 2
+ 174:	cf cf       	rjmp	.-98     	; 0x114 <.L9>
 
-00000172 <.L9>:
- 172:	89 b7       	in	r24, 0x39	; 57
- 174:	8d 7f       	andi	r24, 0xFD	; 253
- 176:	89 bf       	out	0x39, r24	; 57
+00000176 <.L5>:
+ 176:	45 9b       	sbis	0x08, 5	; 8
+ 178:	06 c0       	rjmp	.+12     	; 0x186 <.L11>
 
-00000178 <.LM65>:
- 178:	43 bf       	out	0x33, r20	; 51
-
-0000017a <.LM66>:
+0000017a <.LM63>:
  17a:	8a b5       	in	r24, 0x2a	; 42
- 17c:	8f 77       	andi	r24, 0x7F	; 127
+ 17c:	80 68       	ori	r24, 0x80	; 128
  17e:	8a bd       	out	0x2a, r24	; 42
 
-00000180 <.LM67>:
- 180:	12 be       	out	0x32, r1	; 50
+00000180 <.L12>:
+ 180:	43 9a       	sbi	0x08, 3	; 8
 
-00000182 <.LM68>:
- 182:	80 b5       	in	r24, 0x20	; 32
- 184:	84 60       	ori	r24, 0x04	; 4
- 186:	80 bd       	out	0x20, r24	; 32
+00000182 <.L14>:
+ 182:	80 e0       	ldi	r24, 0x00	; 0
+ 184:	c7 cf       	rjmp	.-114    	; 0x114 <.L9>
 
-00000188 <.LM69>:
- 188:	b8 9a       	sbi	0x17, 0	; 23
+00000186 <.L11>:
+ 186:	89 b7       	in	r24, 0x39	; 57
+ 188:	8d 7f       	andi	r24, 0xFD	; 253
+ 18a:	89 bf       	out	0x39, r24	; 57
 
-0000018a <.LM70>:
- 18a:	c0 98       	cbi	0x18, 0	; 24
- 18c:	ef cf       	rjmp	.-34     	; 0x16c <.L10>
+0000018c <.LM66>:
+ 18c:	43 bf       	out	0x33, r20	; 51
 
-0000018e <_exit>:
- 18e:	f8 94       	cli
+0000018e <.LM67>:
+ 18e:	8a b5       	in	r24, 0x2a	; 42
+ 190:	8f 77       	andi	r24, 0x7F	; 127
+ 192:	8a bd       	out	0x2a, r24	; 42
 
-00000190 <__stop_program>:
- 190:	ff cf       	rjmp	.-2      	; 0x190 <__stop_program>
+00000194 <.LM68>:
+ 194:	12 be       	out	0x32, r1	; 50
+
+00000196 <.LM69>:
+ 196:	80 b5       	in	r24, 0x20	; 32
+ 198:	84 60       	ori	r24, 0x04	; 4
+ 19a:	80 bd       	out	0x20, r24	; 32
+
+0000019c <.LM70>:
+ 19c:	b8 9a       	sbi	0x17, 0	; 23
+
+0000019e <.LM71>:
+ 19e:	c0 98       	cbi	0x18, 0	; 24
+ 1a0:	ef cf       	rjmp	.-34     	; 0x180 <.L12>
+
+000001a2 <.L6>:
+ 1a2:	20 91 60 00 	lds	r18, 0x0060	; 0x800060 <intflags>
+
+000001a6 <.LM73>:
+ 1a6:	23 ff       	sbrs	r18, 3
+ 1a8:	b5 cf       	rjmp	.-150    	; 0x114 <.L9>
+
+000001aa <.LM74>:
+ 1aa:	20 91 60 00 	lds	r18, 0x0060	; 0x800060 <intflags>
+ 1ae:	27 7f       	andi	r18, 0xF7	; 247
+ 1b0:	20 93 60 00 	sts	0x0060, r18	; 0x800060 <intflags>
+
+000001b4 <.LM75>:
+ 1b4:	b4 9b       	sbis	0x16, 4	; 22
+ 1b6:	ae cf       	rjmp	.-164    	; 0x114 <.L9>
+
+000001b8 <.LM76>:
+ 1b8:	80 91 60 00 	lds	r24, 0x0060	; 0x800060 <intflags>
+ 1bc:	84 60       	ori	r24, 0x04	; 4
+ 1be:	80 93 60 00 	sts	0x0060, r24	; 0x800060 <intflags>
+
+000001c2 <.LM77>:
+ 1c2:	85 b7       	in	r24, 0x35	; 53
+ 1c4:	87 7e       	andi	r24, 0xE7	; 231
+ 1c6:	85 bf       	out	0x35, r24	; 53
+ 1c8:	dc cf       	rjmp	.-72     	; 0x182 <.L14>
+
+000001ca <_exit>:
+ 1ca:	f8 94       	cli
+
+000001cc <__stop_program>:
+ 1cc:	ff cf       	rjmp	.-2      	; 0x1cc <__stop_program>

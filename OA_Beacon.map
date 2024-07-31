@@ -134,7 +134,7 @@ END GROUP
 .rela.plt
  *(.rela.plt)
 
-.text           0x00000000      0x192
+.text           0x00000000      0x1ce
  *(.vectors)
  .vectors       0x00000000       0x1e /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/../../../../../../avr/lib/avr25/crtattiny85.o
                 0x00000000                __vectors
@@ -209,39 +209,39 @@ END GROUP
  .text          0x00000090        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
                 0x00000090                        . = ALIGN (0x2)
  *(.text.*)
- .text.startup  0x00000090       0xfe OA_Beacon.o
+ .text.startup  0x00000090      0x13a OA_Beacon.o
                 0x00000090                main
  .text.libgcc.mul
-                0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
+                0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
  .text.libgcc.div
-                0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
- .text.libgcc   0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
+                0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
+ .text.libgcc   0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
  .text.libgcc.prologue
-                0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
+                0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
  .text.libgcc.builtins
-                0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
+                0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
  .text.libgcc.fmul
-                0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
+                0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
  .text.libgcc.fixed
-                0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
+                0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
  .text.libgcc.mul
-                0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
+                0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
  .text.libgcc.div
-                0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
- .text.libgcc   0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
+                0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
+ .text.libgcc   0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
  .text.libgcc.prologue
-                0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
+                0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
  .text.libgcc.builtins
-                0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
+                0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
  .text.libgcc.fmul
-                0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
+                0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
  .text.libgcc.fixed
-                0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
-                0x0000018e                        . = ALIGN (0x2)
+                0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_clear_bss.o)
+                0x000001ca                        . = ALIGN (0x2)
  *(.fini9)
- .fini9         0x0000018e        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
-                0x0000018e                exit
-                0x0000018e                _exit
+ .fini9         0x000001ca        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
+                0x000001ca                exit
+                0x000001ca                _exit
  *(.fini9)
  *(.fini8)
  *(.fini8)
@@ -260,17 +260,17 @@ END GROUP
  *(.fini1)
  *(.fini1)
  *(.fini0)
- .fini0         0x0000018e        0x4 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
+ .fini0         0x000001ca        0x4 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/avr25/libgcc.a(_exit.o)
  *(.fini0)
  *(.hightext)
  *(.hightext*)
  *(.progmemx.*)
-                0x00000192                        . = ALIGN (0x2)
+                0x000001ce                        . = ALIGN (0x2)
  *(.jumptables)
  *(.jumptables*)
-                0x00000192                        _etext = .
+                0x000001ce                        _etext = .
 
-.data           0x00800060        0x0 load address 0x00000192
+.data           0x00800060        0x0 load address 0x000001ce
                 [!provide]                        PROVIDE (__data_start = .)
  *(.data)
  .data          0x00800060        0x0 /opt/homebrew/Cellar/avr-gcc@9/9.4.0_1/lib/avr-gcc/9/gcc/avr/9.4.0/../../../../../../avr/lib/avr25/crtattiny85.o
@@ -298,8 +298,8 @@ END GROUP
  COMMON         0x00800060        0x1 OA_Beacon.o
                 0x00800060                intflags
                 0x00800061                        PROVIDE (__bss_end = .)
-                0x00000192                        __data_load_start = LOADADDR (.data)
-                0x00000192                        __data_load_end = (__data_load_start + SIZEOF (.data))
+                0x000001ce                        __data_load_start = LOADADDR (.data)
+                0x000001ce                        __data_load_end = (__data_load_start + SIZEOF (.data))
 
 .noinit         0x00800061        0x0
                 [!provide]                        PROVIDE (__noinit_start = .)
@@ -326,13 +326,13 @@ END GROUP
 .signature
  *(.signature*)
 
-.stab           0x00000000      0x8c4
+.stab           0x00000000      0x918
  *(.stab)
- .stab          0x00000000      0x8c4 OA_Beacon.o
+ .stab          0x00000000      0x918 OA_Beacon.o
 
-.stabstr        0x00000000      0xebc
+.stabstr        0x00000000      0xece
  *(.stabstr)
- .stabstr       0x00000000      0xebc OA_Beacon.o
+ .stabstr       0x00000000      0xece OA_Beacon.o
 
 .stab.excl
  *(.stab.excl)
