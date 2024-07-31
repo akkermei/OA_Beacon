@@ -58,6 +58,13 @@ ISR(PCINT0_vect){
 }
 
 /* Part 4: Auxiliary functions */
+/* function to start the tomert0 conbnting to TOP and generatinmg an interrupt */
+// static void
+//   start_timer_to_TOP(void)
+//   {
+
+//   }
+
 
 /*
  * Do all the startup-time peripheral initializations.
@@ -180,12 +187,7 @@ main(void)
     MODE_DEEP_SLEEP
   } __attribute__((packed)) mode = MODE_DEEP_SLEEP;
   
-    // enum
-    //  {
-    //    FROM_NIGHT,
-    //    FROM_DAY
-    //  } __attribute__((packed)) last_mode;
-    
+     
 
     uint8_t wait_state = INITIAL_WAIT; // holds the number of blink sequences to wait before really changing the state
     
@@ -208,12 +210,40 @@ intflags.anacomp_int = 1;
                     * A voltage passing between the 1.1V threshold on the AMBIENT_LIGHT_ADC pin should change the mode of the beacon
                     */
 
-                   /* first check the staus of the ENABLE_FLASH_PIN */
+                  /* If we get a pinchange interrupt in mode = MODE_IDLE we ingnore it*/
+                   if (intflags.pinchange_int)
+                    {
+                      intflags.pinchange_int = 0;
+                    }
+
+                   /* Just check the staus of the ENABLE_FLASH_PIN */
                     if (bit_is_clear(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
                       {
                         /* shut down the beacon and set in deepsleep */
                         set_sleep_mode(SLEEP_MODE_PWR_DOWN);
                         mode = MODE_DEEP_SLEEP;
+
+                        /* do some cleanup*/
+                         /* disable the pwm and timer0 */
+                            /* disable the timer0 interrupt */
+                            TIMSK &= ~_BV(TOIE0);
+                            /* Stop timing sequence by setting the prescaler to 0 */
+                            TCCR0B = TMR0_PRESC_0;
+                            /* disconnect compare match from the output pin FLASH (OCOA) */
+                            TCCR0A &= ~_BV(COM0A1);
+                            /* reset the timer0 counter register */
+                            TCNT0 = 0;
+                            /* power down the timer0 */
+                            PRR |= _BV(PRTIM0);
+
+                            /* disable the analog comparator interrupt*/
+                            ACSR &= ~_BV(ACIE);
+                            
+                           /* enable FLASH as output after disconnection from timer */
+                            FLASH_DDR |= _BV(FLASH);
+                             /* TURN OFF the FLASH pin */
+                            FLASHPORT &= ~_BV(FLASH);
+
                         break;
                       }
                         
@@ -321,13 +351,29 @@ intflags.anacomp_int = 1;
                   /* check the status of the ENABLE_FLASH_PIN. Turn ON the Beacon? */
                   if (intflags.pinchange_int)
                   {
-                    intflags.pinchange_int=0;
+                    intflags.pinchange_int = 0;
                     if (bit_is_set(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
                     {
                       /* set the intfalgs.anacomp to initialize the state of the beacon */
                       intflags.anacomp_int = 1;
                       mode = MODE_IDLE;
                       set_sleep_mode(SLEEP_MODE_IDLE);
+
+                      /* start the timer to generate an interrupt to change mode*/
+                       /* power up the timer0 */
+                        PRR &= ~_BV(PRTIM0);
+                        /* enable the timer0 top interrupt */
+                        TIMSK |= _BV(TOIE0);
+                        /* disconnect compare match from the output pin FLASH */
+                        TCCR0A &= ~_BV(COM0A1);
+                        /* reset the timer0 counter register */
+                        TCNT0 = 0;
+                        /* start timing sequence by setting the prescaler */
+                        TCCR0B = TMR0_PRESC_V;
+                      
+                      /* Enable analog comparator interrupt */
+                        ACSR |= _BV(ACIE);     
+
                     }
                   }
             break;
