@@ -1,8 +1,8 @@
 //
 //  Beacon.c
 //
-//  Created by Atle Kleven on 06-11-2023.
-//  Copyright Atle Kleven 06-11-2023. All rights reserved.
+//  Created by Atle Kleven on 31-07-2024.
+//  Copyright Atle Kleven 031-07-2024. All rights reserved.
 //
 
 
@@ -15,7 +15,7 @@
 #include <avr/sleep.h>
 #include <util/delay.h>
 
-#include "Beacon.h"
+#include "OA_Beacon.h"
 
 
 
@@ -35,6 +35,7 @@ volatile struct
   uint8_t tmr0_int: 1;
   uint8_t tmr1_int: 1;
   uint8_t anacomp_int: 1;
+  int8_t pinchange_int: 1;
 }
 intflags;
 
@@ -45,11 +46,15 @@ intflags;
 	
 	
 ISR(TIM0_OVF_vect){
-	intflags.tmr0_int = 1;		/*Mark the occurence of timer0 overflow interrupt */
+	intflags.tmr0_int = 1;		/* Mark the occurence of timer0 overflow interrupt */
 	}
 
 ISR(ANA_COMP_vect){
     intflags.anacomp_int = 1; /* Mark the occurence of an analog comparator interrupt*/
+}
+
+ISR(PCINT0_vect){
+    intflags.pinchange_int = 1; /* Mark the occurence of a pin change interrupt*/
 }
 
 /* Part 4: Auxiliary functions */
@@ -78,7 +83,7 @@ static void
    * up-counting until overflow where an overflow intererupt will be asserted (TOEI0 in TIMSK)
    * The timer is set in fast pwm mode (WGM1 and WGM0 in TCCR0A)
    * NO: Output compare interrupt at value of OCR0A (OCIE0A in TIMSK)
-   * Toggle pin oggle OC0A (PB0) at counter compare match with OCR0A
+   * Toggle pin OC0A (PB0) at counter compare match with OCR0A
    * The timer0 will be started by setting the prescaler (CS02..0 in TCCR0B)
    */
    
@@ -88,7 +93,7 @@ static void
         TCCR0A |= _BV(COM0A1);
         /* set the timer compare value to desired FLASH ON counter cycles*/
         OCR0A = TMR0_PWM_TRESH;
-        /* Set the FLASH (OCOA) pin as output */
+        /* Set the FLASH (OC0A) pin as output */
         FLASH_DDR |= _BV(FLASH);
         /* Enabel timer overflow interrupt*/
         TIMSK |= _BV(TOIE0);
@@ -97,7 +102,7 @@ static void
  
  /*
   * Setup the analog comparator
-  * Refernece voltage 1,1V from bandgap voltage
+  * Reference voltage 1,1V from bandgap voltage
   */
         /* Make sure the ADC is turned off */
         ADCSRA &= ~_BV(ADEN);
@@ -125,7 +130,7 @@ static void
    * DDRxn = 0, enables pullup resistors.
    */
         
-   //     PORTB = _BV(AMBIENT_LIGHT);
+        PORTB = _BV(ENABlE_FLASH_PIN);
 
   /*
    * Enable Port outputs:
@@ -139,7 +144,14 @@ static void
 	/* 
 	 * Enable extrenal interrupts on the input pins
 	 */
-	
+
+	PCMSK |= _BV(ENABlE_FLASH_PIN);
+	/* Enable PIN Change interrupt */
+	GIMSK |= _BV(PCIE); 
+
+
+
+
   /* Start with idle sleep mode */
     set_sleep_mode(SLEEP_MODE_IDLE);
         
@@ -156,15 +168,17 @@ int
 main(void)
 {
   /*
-   * Our modus of operation.  MODE_IDLE means we watch out for
-   * a change from the analog comparator
+   * Our modus of operation.
+   * MODE_IDLE means we watch out for a change from the analog comparator
+   * MODE_DEEP_SLEEP means we are waiting to start the beacon
    */
  enum
   {
     MODE_IDLE,
     MODE_WAIT,
-	  MODE_CHANGE
-  } __attribute__((packed)) mode = MODE_IDLE;
+	  MODE_CHANGE,
+    MODE_DEEP_SLEEP
+  } __attribute__((packed)) mode = MODE_DEEP_SLEEP;
   
     // enum
     //  {
@@ -190,10 +204,21 @@ intflags.anacomp_int = 1;
 			{
         case MODE_IDLE:
                     /*
-                    * The Beacon is in DAY or NIGHt MODE 
+                    * The Beacon is in DAY or NIGHT MODE 
                     * A voltage passing between the 1.1V threshold on the AMBIENT_LIGHT_ADC pin should change the mode of the beacon
                     */
 
+                   /* first check the staus of the ENABLE_FLASH_PIN */
+                    if (bit_is_clear(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
+                      {
+                        /* shut down the beacon and set in deepsleep */
+                        set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+                        mode = MODE_DEEP_SLEEP;
+                      }
+                        
+                        
+                      
+                      
                     /* analog comparator interrupt flag set on toggle state*/
                       if (intflags.anacomp_int)
                       {
@@ -203,15 +228,15 @@ intflags.anacomp_int = 1;
                         /* disable the analog comparator interrupt*/
                         ACSR &= ~_BV(ACIE);
 
-                        /* start the timer here to enable teh wait state */
+                        /* start the timer here to enable the wait state */
                         /* power up the timer0 */
                         PRR &= ~_BV(PRTIM0);
-                        /* enable the timer0 top interrupt*/
+                        /* enable the timer0 top interrupt */
                         TIMSK |= _BV(TOIE0);
 
                         /* check the status of the analog comparator and setup the current mode */
                         if bit_is_set(ACSR, ACO){
-                            /*The analog comparator is positive (NIGHT) */
+                            /* The analog comparator is positive (NIGHT) */
 
 #if defined (__TestSetup_STK500__)                    
   AMBIENT_LIGHT_PORT |= _BV(AMBIENT_LIGHT); // reflect this on the AMBIENT LIGHT PIN
@@ -256,7 +281,7 @@ intflags.anacomp_int = 1;
                 
           break;
 			case MODE_CHANGE:
-                        /*check state of comparator after the wait to set the right mode */
+                        /* check state of comparator after the wait to set the right mode */
                         /* the state is detected even if the interrupt is disabled */
                        if bit_is_set(ACSR, ACO){
                             // FROM_DAY;
@@ -291,10 +316,26 @@ intflags.anacomp_int = 1;
                         ACSR |= _BV(ACIE);                          
        
 					break;
+      case MODE_DEEP_SLEEP:
+                  /* check the status of the ENABLE_FLASH_PIN. Turn ON the Beacon? */
+                  if (intflags.pinchange_int)
+                  {
+                    intflags.pinchange_int=0;
+                    if (bit_is_set(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
+                    {
+                      /* set the intfalgs.anacomp to initialize the state of the beacon */
+                      intflags.anacomp_int = 1;
+                      mode = MODE_IDLE;
+                      set_sleep_mode(SLEEP_MODE_IDLE);
+                    }
+                  }
+                  
+                  
+                  
 			}
 			/*end case */
         
-        /* The analog comparator is only enabled in the idle sleep mode */
+        /* The analog comparator is only enabled in the idle sleep mode (SLEEP_MODE_IDLE) */
         /* Put the MCU in sleep and wait for next interrupt */
         sleep_mode();
 	  

@@ -2,15 +2,15 @@
  *  Beacon.h
  *  
  *
- *  Created by Atle Kleven on 06.11.23
+ *  Created by Atle Kleven on 31.07.24
  *  Copyright 2023. All rights reserved.
- *  version 2023.01 06-11-2023
+ *  version 2023.01 31-07-2024
  */
 
 #ifndef __Beacon_h__
 #define __Beacon_h__
 
-#define FLASH_VERSION 2023
+#define FLASH_VERSION 2024
 #define FLASH_SUBVERSION 1
 
 #ifndef __debug_mode__
@@ -19,10 +19,9 @@
     #undef __debug_mode__
 #endif
 
-/* uncomment next line when running on test setup STK500V2*/
 #ifndef __TestSetup_STK500__
     #define __TestSetup_STK500__
-/* uncomment next line to  enable compiling for STK500 test setup*/
+/* comment next line to  enable compiling for STK500 test setup*/
     #undef __TestSetup_STK500__
 #endif
 
@@ -46,6 +45,9 @@
 #define AMB_LIGHT_ADC_PULLUP    PORTB
 #define AMB_LIGHT_ADC	        PB3
 
+#define ENABlE_FLASH_PORT      PINB
+#define ENABlE_FLASH_PULLUP    PORTB
+#define ENABlE_FLASH_PIN	   PB4
 
 //#define F_CPU 1000000UL	/* CPU clock in Hertz */
 #define F_CPU 125000UL	/* Target CPU clock in Hertz */

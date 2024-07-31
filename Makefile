@@ -56,7 +56,7 @@ FORMAT = ihex
 
 
 # Target file name (without extension).
-TARGET = Beacon
+TARGET = OA_Beacon
 
 
 # List C source files here. (C dependencies are automatically generated.)
