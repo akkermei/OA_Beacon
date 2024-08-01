@@ -356,6 +356,7 @@ intflags.anacomp_int = 1;
                     {
                       /* set the intfalgs.anacomp to initialize the state of the beacon */
                       intflags.anacomp_int = 1;
+                      /* sleep mode idle neede for the timer clocks to run */
                       mode = MODE_IDLE;
                       set_sleep_mode(SLEEP_MODE_IDLE);
 
