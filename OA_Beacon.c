@@ -149,7 +149,7 @@ static void
    #endif
 
 	/* 
-	 * Enable extrenal interrupts on the input pins
+	 * Enable external interrupts on the input pins
 	 */
 
 	PCMSK |= _BV(PCINT4);
@@ -185,7 +185,7 @@ main(void)
     MODE_WAIT,
 	  MODE_CHANGE,
     MODE_DEEP_SLEEP
-  } __attribute__((packed)) mode = MODE_DEEP_SLEEP;
+  } __attribute__((packed)) mode = MODE_IDLE;
   
      
 
@@ -244,7 +244,7 @@ intflags.anacomp_int = 1;
                              /* TURN OFF the FLASH pin */
                             FLASHPORT &= ~_BV(FLASH);
 
-                        break;
+                        //break;
                       }
                         
                         
@@ -354,26 +354,27 @@ intflags.anacomp_int = 1;
                     intflags.pinchange_int = 0;
                     if (bit_is_set(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
                     {
-                      /* set the intfalgs.anacomp to initialize the state of the beacon */
-                      intflags.anacomp_int = 1;
-                      /* sleep mode idle neede for the timer clocks to run */
-                      mode = MODE_IDLE;
+                     /* waking up the beacon*/
+                      /* sleep mode idle needed for the timer clocks to run */
                       set_sleep_mode(SLEEP_MODE_IDLE);
-
+                      /* next mode MODE_IDLE*/
+                      mode = MODE_IDLE;
                       /* start the timer to generate an interrupt to change mode*/
-                       /* power up the timer0 */
-                        PRR &= ~_BV(PRTIM0);
-                        /* enable the timer0 top interrupt */
-                        TIMSK |= _BV(TOIE0);
-                        /* disconnect compare match from the output pin FLASH */
-                        TCCR0A &= ~_BV(COM0A1);
-                        /* reset the timer0 counter register */
-                        TCNT0 = 0;
-                        /* start timing sequence by setting the prescaler */
-                        TCCR0B = TMR0_PRESC_V;
+                      /* power up the timer0 */
+                      PRR &= ~_BV(PRTIM0);
+                      /* enable the timer0 top interrupt */
+                      TIMSK |= _BV(TOIE0);
+                      /* disconnect compare match from the output pin FLASH */
+                      TCCR0A &= ~_BV(COM0A1);
+                      /* reset the timer0 counter register */
+                      TCNT0 = 0;
+                      /* start timing sequence by setting the prescaler */
+                      TCCR0B = TMR0_PRESC_V;
                       
                       /* Enable analog comparator interrupt */
-                        ACSR |= _BV(ACIE);     
+                        ACSR |= _BV(ACIE); 
+                      /* set the intfalgs.anacomp to initialize the state of the beacon */
+                      intflags.anacomp_int = 1;
 
                     }
                   }
