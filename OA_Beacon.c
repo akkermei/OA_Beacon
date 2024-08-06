@@ -201,6 +201,45 @@ intflags.anacomp_int = 1;
   for (;;)
     {
 		
+      /* allways check for on/off state */
+      /* The pin change interrupt is for waking the MCU. We ingnore the flag */
+      if (intflags.pinchange_int)
+        {
+          intflags.pinchange_int = 0;
+        }
+
+      /* check the staus of the ENABLE_FLASH_PIN */
+        if (bit_is_clear(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
+          {
+            /* shut down the beacon and set in deepsleep */
+            
+            /*DEBUG skip deep sleep until we get the MCU in right states*/
+            //set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+           
+            mode = MODE_DEEP_SLEEP;
+            
+            /* do some cleanup*/
+            /* disable the pwm and timer0 */
+            /* disable the timer0 interrupt */
+            TIMSK &= ~_BV(TOIE0);
+            /* Stop timing sequence by setting the prescaler to 0 */
+            TCCR0B = TMR0_PRESC_0;
+            /* disconnect compare match from the output pin FLASH (OCOA) */
+            TCCR0A &= ~_BV(COM0A1);
+            /* reset the timer0 counter register */
+            TCNT0 = 0;
+            /* power down the timer0 */
+            PRR |= _BV(PRTIM0);
+            /* disable the analog comparator interrupt*/
+            ACSR &= ~_BV(ACIE);
+            
+            /* enable FLASH as output after disconnection from timer */
+            FLASH_DDR |= _BV(FLASH);
+            /* TURN OFF the FLASH pin */
+            FLASHPORT &= ~_BV(FLASH);
+          }
+                        
+
 		/* For all interrupts check the system status */   
 		  switch (mode)
 			{
@@ -210,46 +249,6 @@ intflags.anacomp_int = 1;
                     * A voltage passing between the 1.1V threshold on the AMBIENT_LIGHT_ADC pin should change the mode of the beacon
                     */
 
-                  /* If we get a pinchange interrupt in mode = MODE_IDLE we ingnore it*/
-                   if (intflags.pinchange_int)
-                    {
-                      intflags.pinchange_int = 0;
-                    }
-
-                   /* Just check the staus of the ENABLE_FLASH_PIN */
-                    if (bit_is_clear(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
-                      {
-                        /* shut down the beacon and set in deepsleep */
-                        set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-                        mode = MODE_DEEP_SLEEP;
-
-                        /* do some cleanup*/
-                         /* disable the pwm and timer0 */
-                            /* disable the timer0 interrupt */
-                            TIMSK &= ~_BV(TOIE0);
-                            /* Stop timing sequence by setting the prescaler to 0 */
-                            TCCR0B = TMR0_PRESC_0;
-                            /* disconnect compare match from the output pin FLASH (OCOA) */
-                            TCCR0A &= ~_BV(COM0A1);
-                            /* reset the timer0 counter register */
-                            TCNT0 = 0;
-                            /* power down the timer0 */
-                            PRR |= _BV(PRTIM0);
-
-                            /* disable the analog comparator interrupt*/
-                            ACSR &= ~_BV(ACIE);
-                            
-                           /* enable FLASH as output after disconnection from timer */
-                            FLASH_DDR |= _BV(FLASH);
-                             /* TURN OFF the FLASH pin */
-                            FLASHPORT &= ~_BV(FLASH);
-
-                        //break;
-                      }
-                        
-                        
-                      
-                      
                     /* analog comparator interrupt flag set on toggle state*/
                       if (intflags.anacomp_int)
                       {
@@ -349,9 +348,14 @@ intflags.anacomp_int = 1;
 					break;
       case MODE_DEEP_SLEEP:
                   /* check the status of the ENABLE_FLASH_PIN. Turn ON the Beacon? */
+                  /* we should only drop into this stat in a turn ON situation 
+                  * the pin change intrerupt will wake the MPU and we can go on
+                  */
                   if (intflags.pinchange_int)
                   {
                     intflags.pinchange_int = 0;
+                  }
+
                     if (bit_is_set(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
                     {
                      /* waking up the beacon*/
@@ -377,7 +381,7 @@ intflags.anacomp_int = 1;
                       intflags.anacomp_int = 1;
 
                     }
-                  }
+                  
             break;
                   
                   

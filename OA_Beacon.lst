@@ -389,594 +389,578 @@
  201:OA_Beacon.c   ****   for (;;)
  202:OA_Beacon.c   ****     {
  203:OA_Beacon.c   **** 		
- 204:OA_Beacon.c   **** 		/* For all interrupts check the system status */   
- 205:OA_Beacon.c   **** 		  switch (mode)
- 206:OA_Beacon.c   **** 			{
- 207:OA_Beacon.c   ****         case MODE_IDLE:
- 208:OA_Beacon.c   ****                     /*
- 209:OA_Beacon.c   ****                     * The Beacon is in DAY or NIGHT MODE 
- 210:OA_Beacon.c   ****                     * A voltage passing between the 1.1V threshold on the AMBIENT_LIGHT_ADC pin sho
- 211:OA_Beacon.c   ****                     */
- 212:OA_Beacon.c   **** 
- 213:OA_Beacon.c   ****                   /* If we get a pinchange interrupt in mode = MODE_IDLE we ingnore it*/
- 214:OA_Beacon.c   ****                    if (intflags.pinchange_int)
- 215:OA_Beacon.c   ****                     {
- 216:OA_Beacon.c   ****                       intflags.pinchange_int = 0;
- 217:OA_Beacon.c   ****                     }
- 218:OA_Beacon.c   **** 
- 219:OA_Beacon.c   ****                    /* Just check the staus of the ENABLE_FLASH_PIN */
- 220:OA_Beacon.c   ****                     if (bit_is_clear(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
- 221:OA_Beacon.c   ****                       {
- 222:OA_Beacon.c   ****                         /* shut down the beacon and set in deepsleep */
- 223:OA_Beacon.c   ****                         set_sleep_mode(SLEEP_MODE_PWR_DOWN);
- 224:OA_Beacon.c   ****                         mode = MODE_DEEP_SLEEP;
- 225:OA_Beacon.c   **** 
- 226:OA_Beacon.c   ****                         /* do some cleanup*/
- 227:OA_Beacon.c   ****                          /* disable the pwm and timer0 */
- 228:OA_Beacon.c   ****                             /* disable the timer0 interrupt */
- 229:OA_Beacon.c   ****                             TIMSK &= ~_BV(TOIE0);
- 230:OA_Beacon.c   ****                             /* Stop timing sequence by setting the prescaler to 0 */
- 231:OA_Beacon.c   ****                             TCCR0B = TMR0_PRESC_0;
- 232:OA_Beacon.c   ****                             /* disconnect compare match from the output pin FLASH (OCOA) */
- 233:OA_Beacon.c   ****                             TCCR0A &= ~_BV(COM0A1);
- 234:OA_Beacon.c   ****                             /* reset the timer0 counter register */
- 235:OA_Beacon.c   ****                             TCNT0 = 0;
- 236:OA_Beacon.c   ****                             /* power down the timer0 */
- 237:OA_Beacon.c   ****                             PRR |= _BV(PRTIM0);
- 238:OA_Beacon.c   **** 
- 239:OA_Beacon.c   ****                             /* disable the analog comparator interrupt*/
- 240:OA_Beacon.c   ****                             ACSR &= ~_BV(ACIE);
- 241:OA_Beacon.c   ****                             
- 242:OA_Beacon.c   ****                            /* enable FLASH as output after disconnection from timer */
- 243:OA_Beacon.c   ****                             FLASH_DDR |= _BV(FLASH);
- 244:OA_Beacon.c   ****                              /* TURN OFF the FLASH pin */
- 245:OA_Beacon.c   ****                             FLASHPORT &= ~_BV(FLASH);
- 246:OA_Beacon.c   **** 
- 247:OA_Beacon.c   ****                         //break;
- 248:OA_Beacon.c   ****                       }
- 249:OA_Beacon.c   ****                         
- 250:OA_Beacon.c   ****                         
- 251:OA_Beacon.c   ****                       
- 252:OA_Beacon.c   ****                       
- 253:OA_Beacon.c   ****                     /* analog comparator interrupt flag set on toggle state*/
- 254:OA_Beacon.c   ****                       if (intflags.anacomp_int)
- 255:OA_Beacon.c   ****                       {
- 256:OA_Beacon.c   ****                         /* an analog comparator interrupt has occured */
- 257:OA_Beacon.c   ****                         /* reset the analog comparator interrupt flag */
- 258:OA_Beacon.c   ****                         intflags.anacomp_int = 0;
- 259:OA_Beacon.c   ****                         /* disable the analog comparator interrupt*/
- 260:OA_Beacon.c   ****                         ACSR &= ~_BV(ACIE);
- 261:OA_Beacon.c   **** 
- 262:OA_Beacon.c   ****                         /* start the timer here to enable the wait state */
- 263:OA_Beacon.c   ****                         /* power up the timer0 */
- 264:OA_Beacon.c   ****                         PRR &= ~_BV(PRTIM0);
- 265:OA_Beacon.c   ****                         /* enable the timer0 top interrupt */
- 266:OA_Beacon.c   ****                         TIMSK |= _BV(TOIE0);
- 267:OA_Beacon.c   **** 
- 268:OA_Beacon.c   ****                         /* check the status of the analog comparator and setup the current mode */
- 269:OA_Beacon.c   ****                         if bit_is_set(ACSR, ACO){
- 270:OA_Beacon.c   ****                             /* The analog comparator is positive (NIGHT) */
- 271:OA_Beacon.c   **** 
- 272:OA_Beacon.c   **** #if defined (__TestSetup_STK500__)                    
- 273:OA_Beacon.c   ****   AMBIENT_LIGHT_PORT |= _BV(AMBIENT_LIGHT); // reflect this on the AMBIENT LIGHT PIN
- 274:OA_Beacon.c   **** #endif
- 275:OA_Beacon.c   ****                             /* disconnect compare match from the output pin FLASH */
- 276:OA_Beacon.c   ****                             TCCR0A &= ~_BV(COM0A1);
- 277:OA_Beacon.c   **** 
- 278:OA_Beacon.c   ****                               /* enable the FLASH pin as output */
- 279:OA_Beacon.c   ****                               FLASH_DDR |= _BV(FLASH);
- 280:OA_Beacon.c   ****                               FLASHPORT &= ~_BV(FLASH); // make sure the FLASH is OFF
- 281:OA_Beacon.c   ****                             /* start timing sequence by setting the prescaler */
- 282:OA_Beacon.c   ****                             TCCR0B = TMR0_PRESC_V;                
- 283:OA_Beacon.c   ****                         } 
- 284:OA_Beacon.c   ****                             
- 285:OA_Beacon.c   **** #if defined (__TestSetup_STK500__)
- 286:OA_Beacon.c   ****                         else
- 287:OA_Beacon.c   ****                             {
- 288:OA_Beacon.c   ****                             /* The analog comparator is negative (DAY) */                    
- 289:OA_Beacon.c   ****        AMBIENT_LIGHT_PORT &= ~_BV(AMBIENT_LIGHT);// reflect this on the AMBIENT LIGHT PIN
- 290:OA_Beacon.c   ****                             } /* END else */
- 291:OA_Beacon.c   **** #endif
- 292:OA_Beacon.c   ****                             
- 293:OA_Beacon.c   ****                             /* start timing sequence by setting the prescaler */
- 294:OA_Beacon.c   ****                             TCCR0B = TMR0_PRESC_V;
- 295:OA_Beacon.c   ****                         /* Change mode */
- 296:OA_Beacon.c   ****                         mode = MODE_WAIT;
- 297:OA_Beacon.c   **** 
- 298:OA_Beacon.c   ****                       }       
- 299:OA_Beacon.c   **** 				 break;
- 300:OA_Beacon.c   **** 			
- 301:OA_Beacon.c   ****       case MODE_WAIT:
- 302:OA_Beacon.c   ****                 /* in this mode we wait some seconds before entering the new night or day mode */
- 303:OA_Beacon.c   ****                 if (intflags.tmr0_int)
- 304:OA_Beacon.c   ****                 {
- 305:OA_Beacon.c   ****                   intflags.tmr0_int = 0;
- 306:OA_Beacon.c   ****                   if (--wait_state == 0)
- 307:OA_Beacon.c   ****                   { 
- 308:OA_Beacon.c   ****                     wait_state = INITIAL_WAIT;
- 309:OA_Beacon.c   ****                     mode = MODE_CHANGE; 
- 310:OA_Beacon.c   ****                   }
- 311:OA_Beacon.c   ****                 }
- 312:OA_Beacon.c   ****                 
- 313:OA_Beacon.c   ****           break;
- 314:OA_Beacon.c   **** 			case MODE_CHANGE:
- 315:OA_Beacon.c   ****                         /* check state of comparator after the wait to set the right mode */
- 316:OA_Beacon.c   ****                         /* the state is detected even if the interrupt is disabled */
- 317:OA_Beacon.c   ****                        if bit_is_set(ACSR, ACO){
- 318:OA_Beacon.c   ****                             // FROM_DAY;
- 319:OA_Beacon.c   ****                             /* last_mode == FROM_DAY */
- 320:OA_Beacon.c   ****                             /* Enable the OCOA pin as output, start blinking */
- 321:OA_Beacon.c   ****                             TCCR0A |= _BV(COM0A1);
- 322:OA_Beacon.c   ****                         }
- 323:OA_Beacon.c   ****                        else {
- 324:OA_Beacon.c   ****                             // FROM_NIGHT;
- 325:OA_Beacon.c   ****                             /* disable the pwm and timer0 */
- 326:OA_Beacon.c   ****                             /* disable the timer0 interrupt */
- 327:OA_Beacon.c   ****                             TIMSK &= ~_BV(TOIE0);
- 328:OA_Beacon.c   ****                             /* Stop timing sequence by setting the prescaler to 0 */
- 329:OA_Beacon.c   ****                             TCCR0B = TMR0_PRESC_0;
- 311               	.LM35:
- 312 0062 48EF      		ldi r20,lo8(-8)
- 330:OA_Beacon.c   ****                             /* disconnect compare match from the output pin FLASH (OCOA) */
- 331:OA_Beacon.c   ****                             TCCR0A &= ~_BV(COM0A1);
- 332:OA_Beacon.c   ****                             /* reset the timer0 counter register */
- 333:OA_Beacon.c   ****                             TCNT0 = 0;
- 334:OA_Beacon.c   ****                             /* power down the timer0 */
- 335:OA_Beacon.c   ****                             PRR |= _BV(PRTIM0);
- 336:OA_Beacon.c   ****                             
- 337:OA_Beacon.c   ****                            /* enable FLASH as output after disconnection from timer */
- 338:OA_Beacon.c   ****                             FLASH_DDR |= _BV(FLASH);
- 339:OA_Beacon.c   ****                              /* TURN OFF the FLASH pin */
- 340:OA_Beacon.c   ****                             FLASHPORT &= ~_BV(FLASH);
- 341:OA_Beacon.c   ****                             }
- 342:OA_Beacon.c   ****                          
- 343:OA_Beacon.c   ****                         
- 344:OA_Beacon.c   ****                         /* change mode */
- 345:OA_Beacon.c   ****                         mode = MODE_IDLE;
- 346:OA_Beacon.c   ****                         /* Enable analog comparator interrupt */
- 347:OA_Beacon.c   ****                         ACSR |= _BV(ACIE);                          
- 348:OA_Beacon.c   ****        
- 349:OA_Beacon.c   **** 					break;
- 350:OA_Beacon.c   ****       case MODE_DEEP_SLEEP:
- 351:OA_Beacon.c   ****                   /* check the status of the ENABLE_FLASH_PIN. Turn ON the Beacon? */
- 352:OA_Beacon.c   ****                   if (intflags.pinchange_int)
- 353:OA_Beacon.c   ****                   {
- 354:OA_Beacon.c   ****                     intflags.pinchange_int = 0;
- 355:OA_Beacon.c   ****                     if (bit_is_set(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
- 356:OA_Beacon.c   ****                     {
- 357:OA_Beacon.c   ****                      /* waking up the beacon*/
- 358:OA_Beacon.c   ****                       /* sleep mode idle needed for the timer clocks to run */
- 359:OA_Beacon.c   ****                       set_sleep_mode(SLEEP_MODE_IDLE);
- 360:OA_Beacon.c   ****                       /* next mode MODE_IDLE*/
- 361:OA_Beacon.c   ****                       mode = MODE_IDLE;
- 362:OA_Beacon.c   ****                       /* start the timer to generate an interrupt to change mode*/
- 363:OA_Beacon.c   ****                       /* power up the timer0 */
- 364:OA_Beacon.c   ****                       PRR &= ~_BV(PRTIM0);
- 365:OA_Beacon.c   ****                       /* enable the timer0 top interrupt */
- 366:OA_Beacon.c   ****                       TIMSK |= _BV(TOIE0);
- 367:OA_Beacon.c   ****                       /* disconnect compare match from the output pin FLASH */
- 368:OA_Beacon.c   ****                       TCCR0A &= ~_BV(COM0A1);
- 369:OA_Beacon.c   ****                       /* reset the timer0 counter register */
- 370:OA_Beacon.c   ****                       TCNT0 = 0;
- 371:OA_Beacon.c   ****                       /* start timing sequence by setting the prescaler */
- 372:OA_Beacon.c   ****                       TCCR0B = TMR0_PRESC_V;
- 314               	.LM36:
- 315 0064 35E0      		ldi r19,lo8(5)
- 316               	.L14:
- 205:OA_Beacon.c   **** 			{
- 318               	.LM37:
- 319 0066 8230      		cpi r24,lo8(2)
- 320 0068 01F4      		brne .+2
- 321 006a 00C0      		rjmp .L5
- 322 006c 8330      		cpi r24,lo8(3)
- 323 006e 01F4      		brne .+2
- 324 0070 00C0      		rjmp .L6
- 325 0072 8130      		cpi r24,lo8(1)
- 326 0074 01F4      		brne .+2
- 327 0076 00C0      		rjmp .L7
- 214:OA_Beacon.c   ****                     {
- 329               	.LM38:
- 330 0078 8091 0000 		lds r24,intflags
- 214:OA_Beacon.c   ****                     {
- 332               	.LM39:
- 333 007c 83FF      		sbrs r24,3
- 334 007e 00C0      		rjmp .L8
- 216:OA_Beacon.c   ****                     }
- 336               	.LM40:
- 337 0080 8091 0000 		lds r24,intflags
- 338 0084 877F      		andi r24,lo8(~(1<<3))
- 339 0086 8093 0000 		sts intflags,r24
- 340               	.L8:
- 220:OA_Beacon.c   ****                       {
- 342               	.LM41:
- 343 008a B499      		sbic 0x16,4
- 344 008c 00C0      		rjmp .L15
- 223:OA_Beacon.c   ****                         mode = MODE_DEEP_SLEEP;
- 346               	.LM42:
- 347 008e 85B7      		in r24,0x35
- 348 0090 877E      		andi r24,lo8(-25)
- 349 0092 8061      		ori r24,lo8(16)
- 350 0094 85BF      		out 0x35,r24
- 229:OA_Beacon.c   ****                             /* Stop timing sequence by setting the prescaler to 0 */
- 352               	.LM43:
- 353 0096 89B7      		in r24,0x39
- 354 0098 8D7F      		andi r24,lo8(-3)
- 355 009a 89BF      		out 0x39,r24
- 231:OA_Beacon.c   ****                             /* disconnect compare match from the output pin FLASH (OCOA) */
- 357               	.LM44:
- 358 009c 43BF      		out 0x33,r20
- 233:OA_Beacon.c   ****                             /* reset the timer0 counter register */
- 360               	.LM45:
- 361 009e 8AB5      		in r24,0x2a
- 362 00a0 8F77      		andi r24,lo8(127)
- 363 00a2 8ABD      		out 0x2a,r24
- 235:OA_Beacon.c   ****                             /* power down the timer0 */
- 365               	.LM46:
- 366 00a4 12BE      		out 0x32,__zero_reg__
- 237:OA_Beacon.c   **** 
- 368               	.LM47:
- 369 00a6 80B5      		in r24,0x20
- 370 00a8 8460      		ori r24,lo8(4)
- 371 00aa 80BD      		out 0x20,r24
- 240:OA_Beacon.c   ****                             
- 373               	.LM48:
- 374 00ac 4398      		cbi 0x8,3
- 243:OA_Beacon.c   ****                              /* TURN OFF the FLASH pin */
- 376               	.LM49:
- 377 00ae B89A      		sbi 0x17,0
- 245:OA_Beacon.c   **** 
- 379               	.LM50:
- 380 00b0 C098      		cbi 0x18,0
- 224:OA_Beacon.c   **** 
- 382               	.LM51:
- 383 00b2 83E0      		ldi r24,lo8(3)
- 384               	.L9:
+ 204:OA_Beacon.c   ****       /* allways check for on/off state */
+ 205:OA_Beacon.c   ****       /* The pin change interrupt is for waking the MCU. We ingnore the flag */
+ 206:OA_Beacon.c   ****       if (intflags.pinchange_int)
+ 207:OA_Beacon.c   ****         {
+ 208:OA_Beacon.c   ****           intflags.pinchange_int = 0;
+ 209:OA_Beacon.c   ****         }
+ 210:OA_Beacon.c   **** 
+ 211:OA_Beacon.c   ****       /* check the staus of the ENABLE_FLASH_PIN */
+ 212:OA_Beacon.c   ****         if (bit_is_clear(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
+ 213:OA_Beacon.c   ****           {
+ 214:OA_Beacon.c   ****             /* shut down the beacon and set in deepsleep */
+ 215:OA_Beacon.c   ****             
+ 216:OA_Beacon.c   ****             /*DEBUG skip deep sleep until we get the MCU in right states*/
+ 217:OA_Beacon.c   ****             //set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+ 218:OA_Beacon.c   ****            
+ 219:OA_Beacon.c   ****             mode = MODE_DEEP_SLEEP;
+ 220:OA_Beacon.c   ****             
+ 221:OA_Beacon.c   ****             /* do some cleanup*/
+ 222:OA_Beacon.c   ****             /* disable the pwm and timer0 */
+ 223:OA_Beacon.c   ****             /* disable the timer0 interrupt */
+ 224:OA_Beacon.c   ****             TIMSK &= ~_BV(TOIE0);
+ 225:OA_Beacon.c   ****             /* Stop timing sequence by setting the prescaler to 0 */
+ 226:OA_Beacon.c   ****             TCCR0B = TMR0_PRESC_0;
+ 227:OA_Beacon.c   ****             /* disconnect compare match from the output pin FLASH (OCOA) */
+ 228:OA_Beacon.c   ****             TCCR0A &= ~_BV(COM0A1);
+ 229:OA_Beacon.c   ****             /* reset the timer0 counter register */
+ 230:OA_Beacon.c   ****             TCNT0 = 0;
+ 231:OA_Beacon.c   ****             /* power down the timer0 */
+ 232:OA_Beacon.c   ****             PRR |= _BV(PRTIM0);
+ 233:OA_Beacon.c   ****             /* disable the analog comparator interrupt*/
+ 234:OA_Beacon.c   ****             ACSR &= ~_BV(ACIE);
+ 235:OA_Beacon.c   ****             
+ 236:OA_Beacon.c   ****             /* enable FLASH as output after disconnection from timer */
+ 237:OA_Beacon.c   ****             FLASH_DDR |= _BV(FLASH);
+ 238:OA_Beacon.c   ****             /* TURN OFF the FLASH pin */
+ 239:OA_Beacon.c   ****             FLASHPORT &= ~_BV(FLASH);
+ 240:OA_Beacon.c   ****           }
+ 241:OA_Beacon.c   ****                         
+ 242:OA_Beacon.c   **** 
+ 243:OA_Beacon.c   **** 		/* For all interrupts check the system status */   
+ 244:OA_Beacon.c   **** 		  switch (mode)
+ 245:OA_Beacon.c   **** 			{
+ 246:OA_Beacon.c   ****         case MODE_IDLE:
+ 247:OA_Beacon.c   ****                     /*
+ 248:OA_Beacon.c   ****                     * The Beacon is in DAY or NIGHT MODE 
+ 249:OA_Beacon.c   ****                     * A voltage passing between the 1.1V threshold on the AMBIENT_LIGHT_ADC pin sho
+ 250:OA_Beacon.c   ****                     */
+ 251:OA_Beacon.c   **** 
+ 252:OA_Beacon.c   ****                     /* analog comparator interrupt flag set on toggle state*/
+ 253:OA_Beacon.c   ****                       if (intflags.anacomp_int)
  254:OA_Beacon.c   ****                       {
- 386               	.LM52:
- 387 00b4 2091 0000 		lds r18,intflags
- 254:OA_Beacon.c   ****                       {
- 389               	.LM53:
- 390 00b8 22FF      		sbrs r18,2
- 391 00ba 00C0      		rjmp .L10
+ 255:OA_Beacon.c   ****                         /* an analog comparator interrupt has occured */
+ 256:OA_Beacon.c   ****                         /* reset the analog comparator interrupt flag */
+ 257:OA_Beacon.c   ****                         intflags.anacomp_int = 0;
  258:OA_Beacon.c   ****                         /* disable the analog comparator interrupt*/
- 393               	.LM54:
- 394 00bc 8091 0000 		lds r24,intflags
- 395 00c0 8B7F      		andi r24,lo8(~(1<<2))
- 396 00c2 8093 0000 		sts intflags,r24
+ 259:OA_Beacon.c   ****                         ACSR &= ~_BV(ACIE);
  260:OA_Beacon.c   **** 
- 398               	.LM55:
- 399 00c6 4398      		cbi 0x8,3
+ 261:OA_Beacon.c   ****                         /* start the timer here to enable the wait state */
+ 262:OA_Beacon.c   ****                         /* power up the timer0 */
+ 263:OA_Beacon.c   ****                         PRR &= ~_BV(PRTIM0);
  264:OA_Beacon.c   ****                         /* enable the timer0 top interrupt */
- 401               	.LM56:
- 402 00c8 80B5      		in r24,0x20
- 403 00ca 8B7F      		andi r24,lo8(-5)
- 404 00cc 80BD      		out 0x20,r24
+ 265:OA_Beacon.c   ****                         TIMSK |= _BV(TOIE0);
  266:OA_Beacon.c   **** 
- 406               	.LM57:
- 407 00ce 89B7      		in r24,0x39
- 408 00d0 8260      		ori r24,lo8(2)
- 409 00d2 89BF      		out 0x39,r24
+ 267:OA_Beacon.c   ****                         /* check the status of the analog comparator and setup the current mode */
+ 268:OA_Beacon.c   ****                         if bit_is_set(ACSR, ACO){
  269:OA_Beacon.c   ****                             /* The analog comparator is positive (NIGHT) */
- 411               	.LM58:
- 412 00d4 459B      		sbis 0x8,5
- 413 00d6 00C0      		rjmp .L11
+ 270:OA_Beacon.c   **** 
+ 271:OA_Beacon.c   **** #if defined (__TestSetup_STK500__)                    
+ 272:OA_Beacon.c   ****   AMBIENT_LIGHT_PORT |= _BV(AMBIENT_LIGHT); // reflect this on the AMBIENT LIGHT PIN
+ 273:OA_Beacon.c   **** #endif
+ 274:OA_Beacon.c   ****                             /* disconnect compare match from the output pin FLASH */
+ 275:OA_Beacon.c   ****                             TCCR0A &= ~_BV(COM0A1);
  276:OA_Beacon.c   **** 
- 415               	.LM59:
- 416 00d8 8AB5      		in r24,0x2a
- 417 00da 8F77      		andi r24,lo8(127)
- 418 00dc 8ABD      		out 0x2a,r24
+ 277:OA_Beacon.c   ****                               /* enable the FLASH pin as output */
+ 278:OA_Beacon.c   ****                               FLASH_DDR |= _BV(FLASH);
  279:OA_Beacon.c   ****                               FLASHPORT &= ~_BV(FLASH); // make sure the FLASH is OFF
- 420               	.LM60:
- 421 00de B89A      		sbi 0x17,0
  280:OA_Beacon.c   ****                             /* start timing sequence by setting the prescaler */
- 423               	.LM61:
- 424 00e0 C098      		cbi 0x18,0
+ 281:OA_Beacon.c   ****                             TCCR0B = TMR0_PRESC_V;                
  282:OA_Beacon.c   ****                         } 
- 426               	.LM62:
- 427 00e2 33BF      		out 0x33,r19
- 428               	.L11:
+ 283:OA_Beacon.c   ****                             
+ 284:OA_Beacon.c   **** #if defined (__TestSetup_STK500__)
+ 285:OA_Beacon.c   ****                         else
+ 286:OA_Beacon.c   ****                             {
+ 287:OA_Beacon.c   ****                             /* The analog comparator is negative (DAY) */                    
+ 288:OA_Beacon.c   ****        AMBIENT_LIGHT_PORT &= ~_BV(AMBIENT_LIGHT);// reflect this on the AMBIENT LIGHT PIN
+ 289:OA_Beacon.c   ****                             } /* END else */
+ 290:OA_Beacon.c   **** #endif
+ 291:OA_Beacon.c   ****                             
+ 292:OA_Beacon.c   ****                             /* start timing sequence by setting the prescaler */
+ 293:OA_Beacon.c   ****                             TCCR0B = TMR0_PRESC_V;
  294:OA_Beacon.c   ****                         /* Change mode */
- 430               	.LM63:
- 431 00e4 33BF      		out 0x33,r19
+ 295:OA_Beacon.c   ****                         mode = MODE_WAIT;
  296:OA_Beacon.c   **** 
- 433               	.LM64:
- 434 00e6 81E0      		ldi r24,lo8(1)
- 435               	.L10:
- 373:OA_Beacon.c   ****                       
- 374:OA_Beacon.c   ****                       /* Enable analog comparator interrupt */
- 375:OA_Beacon.c   ****                         ACSR |= _BV(ACIE); 
- 376:OA_Beacon.c   ****                       /* set the intfalgs.anacomp to initialize the state of the beacon */
- 377:OA_Beacon.c   ****                       intflags.anacomp_int = 1;
- 378:OA_Beacon.c   **** 
- 379:OA_Beacon.c   ****                     }
- 380:OA_Beacon.c   ****                   }
- 381:OA_Beacon.c   ****             break;
- 382:OA_Beacon.c   ****                   
- 383:OA_Beacon.c   ****                   
- 384:OA_Beacon.c   **** 			}
- 385:OA_Beacon.c   **** 			/*end case */
- 386:OA_Beacon.c   ****         
- 387:OA_Beacon.c   ****         /* The analog comparator is only enabled in the idle sleep mode (SLEEP_MODE_IDLE) */
- 388:OA_Beacon.c   ****         /* Put the MCU in sleep and wait for next interrupt */
- 389:OA_Beacon.c   ****         sleep_mode();
- 437               	.LM65:
- 438 00e8 25B7      		in r18,0x35
- 439 00ea 2062      		ori r18,lo8(32)
- 440 00ec 25BF      		out 0x35,r18
- 441               	/* #APP */
- 442               	 ;  389 "OA_Beacon.c" 1
- 443 00ee 8895      		sleep
- 444               		
- 445               	 ;  0 "" 2
- 446               	/* #NOAPP */
- 447 00f0 25B7      		in r18,0x35
- 448 00f2 2F7D      		andi r18,lo8(-33)
- 449 00f4 25BF      		out 0x35,r18
- 205:OA_Beacon.c   **** 			{
- 451               	.LM66:
- 452 00f6 00C0      		rjmp .L14
- 453               	.L15:
- 454 00f8 80E0      		ldi r24,0
- 455 00fa 00C0      		rjmp .L9
- 456               	.L7:
+ 297:OA_Beacon.c   ****                       }       
+ 298:OA_Beacon.c   **** 				 break;
+ 299:OA_Beacon.c   **** 			
+ 300:OA_Beacon.c   ****       case MODE_WAIT:
+ 301:OA_Beacon.c   ****                 /* in this mode we wait some seconds before entering the new night or day mode */
+ 302:OA_Beacon.c   ****                 if (intflags.tmr0_int)
  303:OA_Beacon.c   ****                 {
- 458               	.LM67:
- 459 00fc 2091 0000 		lds r18,intflags
- 303:OA_Beacon.c   ****                 {
- 461               	.LM68:
- 462 0100 20FF      		sbrs r18,0
- 463 0102 00C0      		rjmp .L10
+ 304:OA_Beacon.c   ****                   intflags.tmr0_int = 0;
  305:OA_Beacon.c   ****                   if (--wait_state == 0)
- 465               	.LM69:
- 466 0104 2091 0000 		lds r18,intflags
- 467 0108 2E7F      		andi r18,lo8(~(1<<0))
- 468 010a 2093 0000 		sts intflags,r18
  306:OA_Beacon.c   ****                   { 
- 470               	.LM70:
- 471 010e 9150      		subi r25,lo8(-(-1))
- 472 0110 01F4      		brne .L10
+ 307:OA_Beacon.c   ****                     wait_state = INITIAL_WAIT;
  308:OA_Beacon.c   ****                     mode = MODE_CHANGE; 
- 474               	.LM71:
- 475 0112 95E0      		ldi r25,lo8(5)
  309:OA_Beacon.c   ****                   }
- 477               	.LM72:
- 478 0114 82E0      		ldi r24,lo8(2)
- 479 0116 00C0      		rjmp .L10
- 480               	.L5:
+ 310:OA_Beacon.c   ****                 }
+ 311:OA_Beacon.c   ****                 
+ 312:OA_Beacon.c   ****           break;
+ 313:OA_Beacon.c   **** 			case MODE_CHANGE:
+ 314:OA_Beacon.c   ****                         /* check state of comparator after the wait to set the right mode */
+ 315:OA_Beacon.c   ****                         /* the state is detected even if the interrupt is disabled */
+ 316:OA_Beacon.c   ****                        if bit_is_set(ACSR, ACO){
  317:OA_Beacon.c   ****                             // FROM_DAY;
- 482               	.LM73:
- 483 0118 459B      		sbis 0x8,5
- 484 011a 00C0      		rjmp .L12
+ 318:OA_Beacon.c   ****                             /* last_mode == FROM_DAY */
+ 319:OA_Beacon.c   ****                             /* Enable the OCOA pin as output, start blinking */
+ 320:OA_Beacon.c   ****                             TCCR0A |= _BV(COM0A1);
  321:OA_Beacon.c   ****                         }
- 486               	.LM74:
- 487 011c 8AB5      		in r24,0x2a
- 488 011e 8068      		ori r24,lo8(-128)
- 489 0120 8ABD      		out 0x2a,r24
- 490               	.L13:
- 347:OA_Beacon.c   ****        
- 492               	.LM75:
- 493 0122 439A      		sbi 0x8,3
- 494               	.L34:
- 361:OA_Beacon.c   ****                       /* start the timer to generate an interrupt to change mode*/
- 496               	.LM76:
- 497 0124 80E0      		ldi r24,0
- 498 0126 00C0      		rjmp .L10
- 499               	.L12:
+ 322:OA_Beacon.c   ****                        else {
+ 323:OA_Beacon.c   ****                             // FROM_NIGHT;
+ 324:OA_Beacon.c   ****                             /* disable the pwm and timer0 */
+ 325:OA_Beacon.c   ****                             /* disable the timer0 interrupt */
+ 326:OA_Beacon.c   ****                             TIMSK &= ~_BV(TOIE0);
  327:OA_Beacon.c   ****                             /* Stop timing sequence by setting the prescaler to 0 */
- 501               	.LM77:
- 502 0128 89B7      		in r24,0x39
- 503 012a 8D7F      		andi r24,lo8(-3)
- 504 012c 89BF      		out 0x39,r24
+ 328:OA_Beacon.c   ****                             TCCR0B = TMR0_PRESC_0;
  329:OA_Beacon.c   ****                             /* disconnect compare match from the output pin FLASH (OCOA) */
- 506               	.LM78:
- 507 012e 43BF      		out 0x33,r20
+ 330:OA_Beacon.c   ****                             TCCR0A &= ~_BV(COM0A1);
  331:OA_Beacon.c   ****                             /* reset the timer0 counter register */
- 509               	.LM79:
- 510 0130 8AB5      		in r24,0x2a
- 511 0132 8F77      		andi r24,lo8(127)
- 512 0134 8ABD      		out 0x2a,r24
+ 332:OA_Beacon.c   ****                             TCNT0 = 0;
  333:OA_Beacon.c   ****                             /* power down the timer0 */
- 514               	.LM80:
- 515 0136 12BE      		out 0x32,__zero_reg__
+ 334:OA_Beacon.c   ****                             PRR |= _BV(PRTIM0);
  335:OA_Beacon.c   ****                             
- 517               	.LM81:
- 518 0138 80B5      		in r24,0x20
- 519 013a 8460      		ori r24,lo8(4)
- 520 013c 80BD      		out 0x20,r24
+ 336:OA_Beacon.c   ****                            /* enable FLASH as output after disconnection from timer */
+ 337:OA_Beacon.c   ****                             FLASH_DDR |= _BV(FLASH);
  338:OA_Beacon.c   ****                              /* TURN OFF the FLASH pin */
- 522               	.LM82:
- 523 013e B89A      		sbi 0x17,0
+ 339:OA_Beacon.c   ****                             FLASHPORT &= ~_BV(FLASH);
  340:OA_Beacon.c   ****                             }
- 525               	.LM83:
- 526 0140 C098      		cbi 0x18,0
- 527 0142 00C0      		rjmp .L13
- 528               	.L6:
- 352:OA_Beacon.c   ****                   {
- 530               	.LM84:
- 531 0144 2091 0000 		lds r18,intflags
- 352:OA_Beacon.c   ****                   {
- 533               	.LM85:
- 534 0148 23FF      		sbrs r18,3
- 535 014a 00C0      		rjmp .L10
- 354:OA_Beacon.c   ****                     if (bit_is_set(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
+ 341:OA_Beacon.c   ****                          
+ 342:OA_Beacon.c   ****                         
+ 343:OA_Beacon.c   ****                         /* change mode */
+ 344:OA_Beacon.c   ****                         mode = MODE_IDLE;
+ 345:OA_Beacon.c   ****                         /* Enable analog comparator interrupt */
+ 346:OA_Beacon.c   ****                         ACSR |= _BV(ACIE);                          
+ 347:OA_Beacon.c   ****        
+ 348:OA_Beacon.c   **** 					break;
+ 349:OA_Beacon.c   ****       case MODE_DEEP_SLEEP:
+ 350:OA_Beacon.c   ****                   /* check the status of the ENABLE_FLASH_PIN. Turn ON the Beacon? */
+ 351:OA_Beacon.c   ****                   /* we should only drop into this stat in a turn ON situation 
+ 352:OA_Beacon.c   ****                   * the pin change intrerupt will wake the MPU and we can go on
+ 353:OA_Beacon.c   ****                   */
+ 354:OA_Beacon.c   ****                   if (intflags.pinchange_int)
+ 355:OA_Beacon.c   ****                   {
+ 356:OA_Beacon.c   ****                     intflags.pinchange_int = 0;
+ 357:OA_Beacon.c   ****                   }
+ 358:OA_Beacon.c   **** 
+ 359:OA_Beacon.c   ****                     if (bit_is_set(ENABlE_FLASH_PORT,ENABlE_FLASH_PIN))
+ 360:OA_Beacon.c   ****                     {
+ 361:OA_Beacon.c   ****                      /* waking up the beacon*/
+ 362:OA_Beacon.c   ****                       /* sleep mode idle needed for the timer clocks to run */
+ 363:OA_Beacon.c   ****                       set_sleep_mode(SLEEP_MODE_IDLE);
+ 364:OA_Beacon.c   ****                       /* next mode MODE_IDLE*/
+ 365:OA_Beacon.c   ****                       mode = MODE_IDLE;
+ 366:OA_Beacon.c   ****                       /* start the timer to generate an interrupt to change mode*/
+ 367:OA_Beacon.c   ****                       /* power up the timer0 */
+ 368:OA_Beacon.c   ****                       PRR &= ~_BV(PRTIM0);
+ 369:OA_Beacon.c   ****                       /* enable the timer0 top interrupt */
+ 370:OA_Beacon.c   ****                       TIMSK |= _BV(TOIE0);
+ 371:OA_Beacon.c   ****                       /* disconnect compare match from the output pin FLASH */
+ 372:OA_Beacon.c   ****                       TCCR0A &= ~_BV(COM0A1);
+ 373:OA_Beacon.c   ****                       /* reset the timer0 counter register */
+ 374:OA_Beacon.c   ****                       TCNT0 = 0;
+ 375:OA_Beacon.c   ****                       /* start timing sequence by setting the prescaler */
+ 376:OA_Beacon.c   ****                       TCCR0B = TMR0_PRESC_V;
+ 311               	.LM35:
+ 312 0062 35E0      		ldi r19,lo8(5)
+ 328:OA_Beacon.c   ****                             /* disconnect compare match from the output pin FLASH (OCOA) */
+ 314               	.LM36:
+ 315 0064 48EF      		ldi r20,lo8(-8)
+ 316               	.L15:
+ 206:OA_Beacon.c   ****         {
+ 318               	.LM37:
+ 319 0066 2091 0000 		lds r18,intflags
+ 206:OA_Beacon.c   ****         {
+ 321               	.LM38:
+ 322 006a 23FF      		sbrs r18,3
+ 323 006c 00C0      		rjmp .L5
+ 208:OA_Beacon.c   ****         }
+ 325               	.LM39:
+ 326 006e 2091 0000 		lds r18,intflags
+ 327 0072 277F      		andi r18,lo8(~(1<<3))
+ 328 0074 2093 0000 		sts intflags,r18
+ 329               	.L5:
+ 212:OA_Beacon.c   ****           {
+ 331               	.LM40:
+ 332 0078 B499      		sbic 0x16,4
+ 333 007a 00C0      		rjmp .L6
+ 224:OA_Beacon.c   ****             /* Stop timing sequence by setting the prescaler to 0 */
+ 335               	.LM41:
+ 336 007c 89B7      		in r24,0x39
+ 337 007e 8D7F      		andi r24,lo8(-3)
+ 338 0080 89BF      		out 0x39,r24
+ 226:OA_Beacon.c   ****             /* disconnect compare match from the output pin FLASH (OCOA) */
+ 340               	.LM42:
+ 341 0082 43BF      		out 0x33,r20
+ 228:OA_Beacon.c   ****             /* reset the timer0 counter register */
+ 343               	.LM43:
+ 344 0084 8AB5      		in r24,0x2a
+ 345 0086 8F77      		andi r24,lo8(127)
+ 346 0088 8ABD      		out 0x2a,r24
+ 230:OA_Beacon.c   ****             /* power down the timer0 */
+ 348               	.LM44:
+ 349 008a 12BE      		out 0x32,__zero_reg__
+ 232:OA_Beacon.c   ****             /* disable the analog comparator interrupt*/
+ 351               	.LM45:
+ 352 008c 80B5      		in r24,0x20
+ 353 008e 8460      		ori r24,lo8(4)
+ 354 0090 80BD      		out 0x20,r24
+ 234:OA_Beacon.c   ****             
+ 356               	.LM46:
+ 357 0092 4398      		cbi 0x8,3
+ 237:OA_Beacon.c   ****             /* TURN OFF the FLASH pin */
+ 359               	.LM47:
+ 360 0094 B89A      		sbi 0x17,0
+ 239:OA_Beacon.c   ****           }
+ 362               	.LM48:
+ 363 0096 C098      		cbi 0x18,0
+ 364               	.L7:
+ 354:OA_Beacon.c   ****                   {
+ 366               	.LM49:
+ 367 0098 8091 0000 		lds r24,intflags
+ 354:OA_Beacon.c   ****                   {
+ 369               	.LM50:
+ 370 009c 83FF      		sbrs r24,3
+ 371 009e 00C0      		rjmp .L14
+ 356:OA_Beacon.c   ****                   }
+ 373               	.LM51:
+ 374 00a0 8091 0000 		lds r24,intflags
+ 375 00a4 877F      		andi r24,lo8(~(1<<3))
+ 376 00a6 8093 0000 		sts intflags,r24
+ 377               	.L14:
+ 359:OA_Beacon.c   ****                     {
+ 379               	.LM52:
+ 380 00aa B49B      		sbis 0x16,4
+ 381 00ac 00C0      		rjmp .L17
+ 363:OA_Beacon.c   ****                       /* next mode MODE_IDLE*/
+ 383               	.LM53:
+ 384 00ae 85B7      		in r24,0x35
+ 385 00b0 877E      		andi r24,lo8(-25)
+ 386 00b2 85BF      		out 0x35,r24
+ 368:OA_Beacon.c   ****                       /* enable the timer0 top interrupt */
+ 388               	.LM54:
+ 389 00b4 80B5      		in r24,0x20
+ 390 00b6 8B7F      		andi r24,lo8(-5)
+ 391 00b8 80BD      		out 0x20,r24
+ 370:OA_Beacon.c   ****                       /* disconnect compare match from the output pin FLASH */
+ 393               	.LM55:
+ 394 00ba 89B7      		in r24,0x39
+ 395 00bc 8260      		ori r24,lo8(2)
+ 396 00be 89BF      		out 0x39,r24
+ 372:OA_Beacon.c   ****                       /* reset the timer0 counter register */
+ 398               	.LM56:
+ 399 00c0 8AB5      		in r24,0x2a
+ 400 00c2 8F77      		andi r24,lo8(127)
+ 401 00c4 8ABD      		out 0x2a,r24
+ 374:OA_Beacon.c   ****                       /* start timing sequence by setting the prescaler */
+ 403               	.LM57:
+ 404 00c6 12BE      		out 0x32,__zero_reg__
+ 406               	.LM58:
+ 407 00c8 33BF      		out 0x33,r19
+ 377:OA_Beacon.c   ****                       
+ 378:OA_Beacon.c   ****                       /* Enable analog comparator interrupt */
+ 379:OA_Beacon.c   ****                         ACSR |= _BV(ACIE); 
+ 409               	.LM59:
+ 410 00ca 439A      		sbi 0x8,3
+ 380:OA_Beacon.c   ****                       /* set the intfalgs.anacomp to initialize the state of the beacon */
+ 381:OA_Beacon.c   ****                       intflags.anacomp_int = 1;
+ 412               	.LM60:
+ 413 00cc 8091 0000 		lds r24,intflags
+ 414 00d0 8460      		ori r24,lo8(1<<2)
+ 415 00d2 8093 0000 		sts intflags,r24
+ 416 00d6 00C0      		rjmp .L16
+ 417               	.L6:
+ 244:OA_Beacon.c   **** 			{
+ 419               	.LM61:
+ 420 00d8 8230      		cpi r24,lo8(2)
+ 421 00da 01F0      		breq .L8
+ 422 00dc 8330      		cpi r24,lo8(3)
+ 423 00de 01F0      		breq .L7
+ 424 00e0 8130      		cpi r24,lo8(1)
+ 425 00e2 01F0      		breq .L9
+ 253:OA_Beacon.c   ****                       {
+ 427               	.LM62:
+ 428 00e4 8091 0000 		lds r24,intflags
+ 253:OA_Beacon.c   ****                       {
+ 430               	.LM63:
+ 431 00e8 82FF      		sbrs r24,2
+ 432 00ea 00C0      		rjmp .L16
+ 257:OA_Beacon.c   ****                         /* disable the analog comparator interrupt*/
+ 434               	.LM64:
+ 435 00ec 8091 0000 		lds r24,intflags
+ 436 00f0 8B7F      		andi r24,lo8(~(1<<2))
+ 437 00f2 8093 0000 		sts intflags,r24
+ 259:OA_Beacon.c   **** 
+ 439               	.LM65:
+ 440 00f6 4398      		cbi 0x8,3
+ 263:OA_Beacon.c   ****                         /* enable the timer0 top interrupt */
+ 442               	.LM66:
+ 443 00f8 80B5      		in r24,0x20
+ 444 00fa 8B7F      		andi r24,lo8(-5)
+ 445 00fc 80BD      		out 0x20,r24
+ 265:OA_Beacon.c   **** 
+ 447               	.LM67:
+ 448 00fe 89B7      		in r24,0x39
+ 449 0100 8260      		ori r24,lo8(2)
+ 450 0102 89BF      		out 0x39,r24
+ 268:OA_Beacon.c   ****                             /* The analog comparator is positive (NIGHT) */
+ 452               	.LM68:
+ 453 0104 459B      		sbis 0x8,5
+ 454 0106 00C0      		rjmp .L11
+ 275:OA_Beacon.c   **** 
+ 456               	.LM69:
+ 457 0108 8AB5      		in r24,0x2a
+ 458 010a 8F77      		andi r24,lo8(127)
+ 459 010c 8ABD      		out 0x2a,r24
+ 278:OA_Beacon.c   ****                               FLASHPORT &= ~_BV(FLASH); // make sure the FLASH is OFF
+ 461               	.LM70:
+ 462 010e B89A      		sbi 0x17,0
+ 279:OA_Beacon.c   ****                             /* start timing sequence by setting the prescaler */
+ 464               	.LM71:
+ 465 0110 C098      		cbi 0x18,0
+ 281:OA_Beacon.c   ****                         } 
+ 467               	.LM72:
+ 468 0112 33BF      		out 0x33,r19
+ 469               	.L11:
+ 293:OA_Beacon.c   ****                         /* Change mode */
+ 471               	.LM73:
+ 472 0114 33BF      		out 0x33,r19
+ 295:OA_Beacon.c   **** 
+ 474               	.LM74:
+ 475 0116 81E0      		ldi r24,lo8(1)
+ 476               	.L10:
+ 382:OA_Beacon.c   **** 
+ 383:OA_Beacon.c   ****                     }
+ 384:OA_Beacon.c   ****                   
+ 385:OA_Beacon.c   ****             break;
+ 386:OA_Beacon.c   ****                   
+ 387:OA_Beacon.c   ****                   
+ 388:OA_Beacon.c   **** 			}
+ 389:OA_Beacon.c   **** 			/*end case */
+ 390:OA_Beacon.c   ****         
+ 391:OA_Beacon.c   ****         /* The analog comparator is only enabled in the idle sleep mode (SLEEP_MODE_IDLE) */
+ 392:OA_Beacon.c   ****         /* Put the MCU in sleep and wait for next interrupt */
+ 393:OA_Beacon.c   ****         sleep_mode();
+ 478               	.LM75:
+ 479 0118 25B7      		in r18,0x35
+ 480 011a 2062      		ori r18,lo8(32)
+ 481 011c 25BF      		out 0x35,r18
+ 482               	/* #APP */
+ 483               	 ;  393 "OA_Beacon.c" 1
+ 484 011e 8895      		sleep
+ 485               		
+ 486               	 ;  0 "" 2
+ 487               	/* #NOAPP */
+ 488 0120 25B7      		in r18,0x35
+ 489 0122 2F7D      		andi r18,lo8(-33)
+ 490 0124 25BF      		out 0x35,r18
+ 206:OA_Beacon.c   ****         {
+ 492               	.LM76:
+ 493 0126 00C0      		rjmp .L15
+ 494               	.L9:
+ 302:OA_Beacon.c   ****                 {
+ 496               	.LM77:
+ 497 0128 2091 0000 		lds r18,intflags
+ 302:OA_Beacon.c   ****                 {
+ 499               	.LM78:
+ 500 012c 20FF      		sbrs r18,0
+ 501 012e 00C0      		rjmp .L10
+ 304:OA_Beacon.c   ****                   if (--wait_state == 0)
+ 503               	.LM79:
+ 504 0130 2091 0000 		lds r18,intflags
+ 505 0134 2E7F      		andi r18,lo8(~(1<<0))
+ 506 0136 2093 0000 		sts intflags,r18
+ 305:OA_Beacon.c   ****                   { 
+ 508               	.LM80:
+ 509 013a 9150      		subi r25,lo8(-(-1))
+ 510 013c 01F4      		brne .L10
+ 307:OA_Beacon.c   ****                     mode = MODE_CHANGE; 
+ 512               	.LM81:
+ 513 013e 95E0      		ldi r25,lo8(5)
+ 308:OA_Beacon.c   ****                   }
+ 515               	.LM82:
+ 516 0140 82E0      		ldi r24,lo8(2)
+ 517 0142 00C0      		rjmp .L10
+ 518               	.L8:
+ 316:OA_Beacon.c   ****                             // FROM_DAY;
+ 520               	.LM83:
+ 521 0144 459B      		sbis 0x8,5
+ 522 0146 00C0      		rjmp .L12
+ 320:OA_Beacon.c   ****                         }
+ 524               	.LM84:
+ 525 0148 8AB5      		in r24,0x2a
+ 526 014a 8068      		ori r24,lo8(-128)
+ 527 014c 8ABD      		out 0x2a,r24
+ 528               	.L13:
+ 346:OA_Beacon.c   ****        
+ 530               	.LM85:
+ 531 014e 439A      		sbi 0x8,3
+ 532               	.L16:
+ 533 0150 80E0      		ldi r24,0
+ 534 0152 00C0      		rjmp .L10
+ 535               	.L12:
+ 326:OA_Beacon.c   ****                             /* Stop timing sequence by setting the prescaler to 0 */
  537               	.LM86:
- 538 014c 2091 0000 		lds r18,intflags
- 539 0150 277F      		andi r18,lo8(~(1<<3))
- 540 0152 2093 0000 		sts intflags,r18
- 355:OA_Beacon.c   ****                     {
+ 538 0154 89B7      		in r24,0x39
+ 539 0156 8D7F      		andi r24,lo8(-3)
+ 540 0158 89BF      		out 0x39,r24
+ 328:OA_Beacon.c   ****                             /* disconnect compare match from the output pin FLASH (OCOA) */
  542               	.LM87:
- 543 0156 B49B      		sbis 0x16,4
- 544 0158 00C0      		rjmp .L10
- 359:OA_Beacon.c   ****                       /* next mode MODE_IDLE*/
- 546               	.LM88:
- 547 015a 85B7      		in r24,0x35
- 548 015c 877E      		andi r24,lo8(-25)
- 549 015e 85BF      		out 0x35,r24
- 364:OA_Beacon.c   ****                       /* enable the timer0 top interrupt */
- 551               	.LM89:
- 552 0160 80B5      		in r24,0x20
- 553 0162 8B7F      		andi r24,lo8(-5)
- 554 0164 80BD      		out 0x20,r24
- 366:OA_Beacon.c   ****                       /* disconnect compare match from the output pin FLASH */
- 556               	.LM90:
- 557 0166 89B7      		in r24,0x39
- 558 0168 8260      		ori r24,lo8(2)
- 559 016a 89BF      		out 0x39,r24
- 368:OA_Beacon.c   ****                       /* reset the timer0 counter register */
- 561               	.LM91:
- 562 016c 8AB5      		in r24,0x2a
- 563 016e 8F77      		andi r24,lo8(127)
- 564 0170 8ABD      		out 0x2a,r24
- 370:OA_Beacon.c   ****                       /* start timing sequence by setting the prescaler */
- 566               	.LM92:
- 567 0172 12BE      		out 0x32,__zero_reg__
- 372:OA_Beacon.c   ****                       
- 569               	.LM93:
- 570 0174 33BF      		out 0x33,r19
- 375:OA_Beacon.c   ****                       /* set the intfalgs.anacomp to initialize the state of the beacon */
- 572               	.LM94:
- 573 0176 439A      		sbi 0x8,3
- 377:OA_Beacon.c   **** 
- 575               	.LM95:
- 576 0178 8091 0000 		lds r24,intflags
- 577 017c 8460      		ori r24,lo8(1<<2)
- 578 017e 8093 0000 		sts intflags,r24
- 579 0182 00C0      		rjmp .L34
- 585               	.Lscope4:
- 586               		.comm	intflags,1,1
- 588               		.text
- 590               	.Letext0:
- 591               		.ident	"GCC: (Homebrew AVR GCC 9.4.0_1) 9.4.0"
- 592               	.global __do_clear_bss
+ 543 015a 43BF      		out 0x33,r20
+ 330:OA_Beacon.c   ****                             /* reset the timer0 counter register */
+ 545               	.LM88:
+ 546 015c 8AB5      		in r24,0x2a
+ 547 015e 8F77      		andi r24,lo8(127)
+ 548 0160 8ABD      		out 0x2a,r24
+ 332:OA_Beacon.c   ****                             /* power down the timer0 */
+ 550               	.LM89:
+ 551 0162 12BE      		out 0x32,__zero_reg__
+ 334:OA_Beacon.c   ****                             
+ 553               	.LM90:
+ 554 0164 80B5      		in r24,0x20
+ 555 0166 8460      		ori r24,lo8(4)
+ 556 0168 80BD      		out 0x20,r24
+ 337:OA_Beacon.c   ****                              /* TURN OFF the FLASH pin */
+ 558               	.LM91:
+ 559 016a B89A      		sbi 0x17,0
+ 339:OA_Beacon.c   ****                             }
+ 561               	.LM92:
+ 562 016c C098      		cbi 0x18,0
+ 563 016e 00C0      		rjmp .L13
+ 564               	.L17:
+ 565 0170 83E0      		ldi r24,lo8(3)
+ 566 0172 00C0      		rjmp .L10
+ 572               	.Lscope4:
+ 573               		.comm	intflags,1,1
+ 575               		.text
+ 577               	.Letext0:
+ 578               		.ident	"GCC: (Homebrew AVR GCC 9.4.0_1) 9.4.0"
+ 579               	.global __do_clear_bss
 DEFINED SYMBOLS
                             *ABS*:00000000 OA_Beacon.c
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:2      *ABS*:0000003e __SP_H__
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:3      *ABS*:0000003d __SP_L__
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:4      *ABS*:0000003f __SREG__
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:5      *ABS*:00000000 __tmp_reg__
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:6      *ABS*:00000001 __zero_reg__
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:117    .text:00000000 __vector_5
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:2      *ABS*:0000003e __SP_H__
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:3      *ABS*:0000003d __SP_L__
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:4      *ABS*:0000003f __SREG__
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:5      *ABS*:00000000 __tmp_reg__
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:6      *ABS*:00000001 __zero_reg__
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:117    .text:00000000 __vector_5
                             *ABS*:00000002 __gcc_isr.n_pushed.001
                             *COM*:00000001 intflags
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:142    .text:00000018 __vector_7
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:142    .text:00000018 __vector_7
                             *ABS*:00000002 __gcc_isr.n_pushed.002
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:167    .text:00000030 __vector_2
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:167    .text:00000030 __vector_2
                             *ABS*:00000002 __gcc_isr.n_pushed.003
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:197    .text.startup:00000000 main
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:320    .text.startup:0000006a L0
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:323    .text.startup:00000070 L0
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:326    .text.startup:00000076 L0
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:9      .text:00000000 .Ltext0
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:119    .text:00000000 .LM0
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:127    .text:00000006 .LM1
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:133    .text:00000010 .LM2
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:144    .text:00000018 .LM3
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:152    .text:0000001e .LM4
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:158    .text:00000028 .LM5
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:169    .text:00000030 .LM6
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:178    .text:00000038 .LM7
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:186    .text:00000046 .LM8
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:199    .text.startup:00000000 .LM9
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:208    .text.startup:00000000 .LM10
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:212    .text.startup:00000004 .LM11
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:216    .text.startup:00000008 .LM12
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:221    .text.startup:0000000e .LM13
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:226    .text.startup:00000014 .LM14
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:230    .text.startup:00000018 .LM15
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:233    .text.startup:0000001a .LM16
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:238    .text.startup:00000020 .LM17
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:243    .text.startup:00000026 .LM18
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:246    .text.startup:00000028 .LM19
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:249    .text.startup:0000002a .LM20
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:254    .text.startup:00000030 .LM21
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:257    .text.startup:00000032 .LM22
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:260    .text.startup:00000034 .LM23
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:265    .text.startup:0000003a .LM24
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:268    .text.startup:0000003c .LM25
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:271    .text.startup:0000003e .LM26
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:274    .text.startup:00000040 .LM27
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:278    .text.startup:00000044 .LM28
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:281    .text.startup:00000046 .LM29
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:286    .text.startup:0000004c .LM30
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:291    .text.startup:00000052 .LM31
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:300    .text.startup:00000054 .LM32
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:305    .text.startup:0000005e .LM33
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:308    .text.startup:00000060 .LM34
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:311    .text.startup:00000062 .LM35
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:314    .text.startup:00000064 .LM36
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:318    .text.startup:00000066 .LM37
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:329    .text.startup:00000078 .LM38
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:332    .text.startup:0000007c .LM39
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:336    .text.startup:00000080 .LM40
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:342    .text.startup:0000008a .LM41
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:346    .text.startup:0000008e .LM42
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:352    .text.startup:00000096 .LM43
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:357    .text.startup:0000009c .LM44
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:360    .text.startup:0000009e .LM45
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:365    .text.startup:000000a4 .LM46
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:368    .text.startup:000000a6 .LM47
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:373    .text.startup:000000ac .LM48
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:376    .text.startup:000000ae .LM49
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:379    .text.startup:000000b0 .LM50
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:382    .text.startup:000000b2 .LM51
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:386    .text.startup:000000b4 .LM52
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:389    .text.startup:000000b8 .LM53
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:393    .text.startup:000000bc .LM54
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:398    .text.startup:000000c6 .LM55
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:401    .text.startup:000000c8 .LM56
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:406    .text.startup:000000ce .LM57
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:411    .text.startup:000000d4 .LM58
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:415    .text.startup:000000d8 .LM59
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:420    .text.startup:000000de .LM60
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:423    .text.startup:000000e0 .LM61
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:426    .text.startup:000000e2 .LM62
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:430    .text.startup:000000e4 .LM63
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:433    .text.startup:000000e6 .LM64
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:437    .text.startup:000000e8 .LM65
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:451    .text.startup:000000f6 .LM66
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:458    .text.startup:000000fc .LM67
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:461    .text.startup:00000100 .LM68
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:465    .text.startup:00000104 .LM69
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:470    .text.startup:0000010e .LM70
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:474    .text.startup:00000112 .LM71
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:477    .text.startup:00000114 .LM72
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:482    .text.startup:00000118 .LM73
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:486    .text.startup:0000011c .LM74
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:492    .text.startup:00000122 .LM75
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:496    .text.startup:00000124 .LM76
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:501    .text.startup:00000128 .LM77
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:506    .text.startup:0000012e .LM78
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:509    .text.startup:00000130 .LM79
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:514    .text.startup:00000136 .LM80
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:517    .text.startup:00000138 .LM81
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:522    .text.startup:0000013e .LM82
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:525    .text.startup:00000140 .LM83
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:530    .text.startup:00000144 .LM84
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:533    .text.startup:00000148 .LM85
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:537    .text.startup:0000014c .LM86
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:542    .text.startup:00000156 .LM87
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:546    .text.startup:0000015a .LM88
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:551    .text.startup:00000160 .LM89
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:556    .text.startup:00000166 .LM90
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:561    .text.startup:0000016c .LM91
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:566    .text.startup:00000172 .LM92
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:569    .text.startup:00000174 .LM93
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:572    .text.startup:00000176 .LM94
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:575    .text.startup:00000178 .LM95
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:585    .text.startup:00000184 .Lscope4
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:590    .text:00000050 .Letext0
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:480    .text.startup:00000118 .L5
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:528    .text.startup:00000144 .L6
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:456    .text.startup:000000fc .L7
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:340    .text.startup:0000008a .L8
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:453    .text.startup:000000f8 .L15
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:435    .text.startup:000000e8 .L10
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:428    .text.startup:000000e4 .L11
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:316    .text.startup:00000066 .L14
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:384    .text.startup:000000b4 .L9
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:499    .text.startup:00000128 .L12
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:490    .text.startup:00000122 .L13
-/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//ccHASTD2.s:494    .text.startup:00000124 .L34
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:197    .text.startup:00000000 main
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:9      .text:00000000 .Ltext0
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:119    .text:00000000 .LM0
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:127    .text:00000006 .LM1
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:133    .text:00000010 .LM2
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:144    .text:00000018 .LM3
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:152    .text:0000001e .LM4
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:158    .text:00000028 .LM5
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:169    .text:00000030 .LM6
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:178    .text:00000038 .LM7
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:186    .text:00000046 .LM8
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:199    .text.startup:00000000 .LM9
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:208    .text.startup:00000000 .LM10
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:212    .text.startup:00000004 .LM11
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:216    .text.startup:00000008 .LM12
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:221    .text.startup:0000000e .LM13
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:226    .text.startup:00000014 .LM14
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:230    .text.startup:00000018 .LM15
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:233    .text.startup:0000001a .LM16
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:238    .text.startup:00000020 .LM17
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:243    .text.startup:00000026 .LM18
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:246    .text.startup:00000028 .LM19
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:249    .text.startup:0000002a .LM20
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:254    .text.startup:00000030 .LM21
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:257    .text.startup:00000032 .LM22
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:260    .text.startup:00000034 .LM23
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:265    .text.startup:0000003a .LM24
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:268    .text.startup:0000003c .LM25
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:271    .text.startup:0000003e .LM26
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:274    .text.startup:00000040 .LM27
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:278    .text.startup:00000044 .LM28
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:281    .text.startup:00000046 .LM29
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:286    .text.startup:0000004c .LM30
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:291    .text.startup:00000052 .LM31
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:300    .text.startup:00000054 .LM32
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:305    .text.startup:0000005e .LM33
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:308    .text.startup:00000060 .LM34
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:311    .text.startup:00000062 .LM35
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:314    .text.startup:00000064 .LM36
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:318    .text.startup:00000066 .LM37
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:321    .text.startup:0000006a .LM38
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:325    .text.startup:0000006e .LM39
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:331    .text.startup:00000078 .LM40
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:335    .text.startup:0000007c .LM41
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:340    .text.startup:00000082 .LM42
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:343    .text.startup:00000084 .LM43
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:348    .text.startup:0000008a .LM44
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:351    .text.startup:0000008c .LM45
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:356    .text.startup:00000092 .LM46
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:359    .text.startup:00000094 .LM47
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:362    .text.startup:00000096 .LM48
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:366    .text.startup:00000098 .LM49
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:369    .text.startup:0000009c .LM50
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:373    .text.startup:000000a0 .LM51
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:379    .text.startup:000000aa .LM52
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:383    .text.startup:000000ae .LM53
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:388    .text.startup:000000b4 .LM54
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:393    .text.startup:000000ba .LM55
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:398    .text.startup:000000c0 .LM56
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:403    .text.startup:000000c6 .LM57
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:406    .text.startup:000000c8 .LM58
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:409    .text.startup:000000ca .LM59
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:412    .text.startup:000000cc .LM60
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:419    .text.startup:000000d8 .LM61
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:427    .text.startup:000000e4 .LM62
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:430    .text.startup:000000e8 .LM63
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:434    .text.startup:000000ec .LM64
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:439    .text.startup:000000f6 .LM65
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:442    .text.startup:000000f8 .LM66
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:447    .text.startup:000000fe .LM67
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:452    .text.startup:00000104 .LM68
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:456    .text.startup:00000108 .LM69
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:461    .text.startup:0000010e .LM70
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:464    .text.startup:00000110 .LM71
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:467    .text.startup:00000112 .LM72
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:471    .text.startup:00000114 .LM73
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:474    .text.startup:00000116 .LM74
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:478    .text.startup:00000118 .LM75
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:492    .text.startup:00000126 .LM76
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:496    .text.startup:00000128 .LM77
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:499    .text.startup:0000012c .LM78
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:503    .text.startup:00000130 .LM79
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:508    .text.startup:0000013a .LM80
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:512    .text.startup:0000013e .LM81
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:515    .text.startup:00000140 .LM82
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:520    .text.startup:00000144 .LM83
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:524    .text.startup:00000148 .LM84
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:530    .text.startup:0000014e .LM85
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:537    .text.startup:00000154 .LM86
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:542    .text.startup:0000015a .LM87
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:545    .text.startup:0000015c .LM88
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:550    .text.startup:00000162 .LM89
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:553    .text.startup:00000164 .LM90
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:558    .text.startup:0000016a .LM91
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:561    .text.startup:0000016c .LM92
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:572    .text.startup:00000174 .Lscope4
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:577    .text:00000050 .Letext0
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:329    .text.startup:00000078 .L5
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:417    .text.startup:000000d8 .L6
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:377    .text.startup:000000aa .L14
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:564    .text.startup:00000170 .L17
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:532    .text.startup:00000150 .L16
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:518    .text.startup:00000144 .L8
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:364    .text.startup:00000098 .L7
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:494    .text.startup:00000128 .L9
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:469    .text.startup:00000114 .L11
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:316    .text.startup:00000066 .L15
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:476    .text.startup:00000118 .L10
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:535    .text.startup:00000154 .L12
+/var/folders/5q/f38rkw6s47l_f5mvx2vsh8m00000gq/T//cc1vNuJ2.s:528    .text.startup:0000014e .L13
 
 UNDEFINED SYMBOLS
 __do_clear_bss
